@@ -19,7 +19,7 @@ const canvasUtils = (canvas) => {
     (pos[0] + halfsizeScaler) * minExtent() * (1.0 / sizeScaler) + (width() - minExtent()) * 0.5, 
     (pos[1] + halfsizeScaler) * minExtent() * (1.0 / sizeScaler) + (height() - minExtent()) * 0.5);
 
-  const world2canvasLength = length => length * minExtent() * (1.0 / halfsizeScaler);
+  const world2canvasLength = length => length * minExtent() * (1.0 / sizeScaler);
 
   const clearCanvas = () => {
     var ctx = getContext();
@@ -32,8 +32,8 @@ const canvasUtils = (canvas) => {
     var posCanvas = world2canvas(pos);
     var radiusCanvas = world2canvasLength(radius);
     var grd = ctx.createRadialGradient(posCanvas[0], posCanvas[1], 0.1, posCanvas[0], posCanvas[1], radiusCanvas);
-    grd.addColorStop(0.0, '#AAAAAAAA');
-    grd.addColorStop(0.5, '#000000AA');
+    grd.addColorStop(0.0, '#AAAAAA');
+    grd.addColorStop(0.5, '#000000');
     ctx.fillStyle = grd;
     ctx.fillRect(0, 0, width(), height());
   }
@@ -69,6 +69,35 @@ const canvasUtils = (canvas) => {
     ctx.stroke(); 
   }
 
+  const drawModel = (pos, model) => {
+    model.items.forEach(element => {
+      if (element.type === "circle") {
+        drawCircle([pos[0] + element.pos[0], pos[1] + element.pos[1]], element.radius, element.color)
+      } else if (element.type === "line") {
+        drawLine([pos[0] + element.from[0], pos[1] + element.from[1]], [pos[0] + element.to[0], pos[1] + element.to[1]], element.color)
+      } else if (element.type === "rect") {
+        drawRect(pos, element.width, element.height, element.color)
+      } else {
+        console.log("unknown model shape")
+      }
+    });
+  }
+
+  const fillPoly = (points) => {
+    var ctx = getContext();
+    ctx.fillStyle = 'black';
+    ctx.beginPath();
+
+    const firstCanvas = world2canvas(points[0]);
+    ctx.moveTo(firstCanvas[0], firstCanvas[1]);
+    for(var i = 1; i < points.length; i++) {
+      const canvas = world2canvas(points[i]);
+      ctx.lineTo(canvas[0], canvas[1])
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+
   const drawTextCanvas = (pos, text) => {
     const ctx = getContext();
     ctx.fillStyle = "white";
@@ -86,7 +115,9 @@ const canvasUtils = (canvas) => {
     drawRect: drawRect,
     drawSquare: drawSquare,
     drawLine: drawLine,
-    drawTextCanvas: drawTextCanvas
+    drawModel: drawModel,
+    drawTextCanvas: drawTextCanvas,
+    fillPoly: fillPoly
   };
 }
 

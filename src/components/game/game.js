@@ -1,4 +1,4 @@
-import renderer from './renderer'
+import renderer from '../rendering/renderer'
 import { gamestate } from './gamestate'
 import { vec2 } from 'gl-matrix'
 import KeyCodes from './keycodes'
@@ -47,7 +47,8 @@ const game = (canvas, controlstate, requestAnimFrame) => {
 
     while (accumulator >= PHYSICS_TIME_STEP)
     {
-      vec2.scaleAndAdd(gamestate.player.pos, gamestate.player.pos, vec2.fromValues(xMovement, yMovement), 0.5)
+      const newPos = vec2.scaleAndAdd([], gamestate.player.pos, vec2.fromValues(xMovement, yMovement), 0.5);
+      gamestate.player.pos = newPos;
       accumulator -= PHYSICS_TIME_STEP;
     }
     const rend = renderer(canvas)

@@ -1,0 +1,13 @@
+.App {
+  text-align: center;
+  align-content: center;
+  display: flex;
+  flex-direction: column;
+  margin:auto;
+}
+
+canvas {
+  width: 1200px;
+  height: 900px;
+  margin:auto;
+}

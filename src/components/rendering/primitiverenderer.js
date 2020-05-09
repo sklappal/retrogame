@@ -1,7 +1,8 @@
 import { vec2 } from 'gl-matrix'
 
-const canvasUtils = (canvas) => {
+const primitiveRenderer = (canvas, camera) => {
 
+  console.log(camera)
   const sizeScaler = 100.0;
   const halfsizeScaler = sizeScaler * 0.5;
 
@@ -16,8 +17,8 @@ const canvasUtils = (canvas) => {
   const minExtent = () => Math.min(width(), height());
 
   const world2canvas = pos => vec2.fromValues(
-    (pos[0] + halfsizeScaler) * minExtent() * (1.0 / sizeScaler) + (width() - minExtent()) * 0.5, 
-    (pos[1] + halfsizeScaler) * minExtent() * (1.0 / sizeScaler) + (height() - minExtent()) * 0.5);
+    (pos[0] - camera[0] + halfsizeScaler) * minExtent() * (1.0 / sizeScaler) + (width() - minExtent()) * 0.5, 
+    (pos[1] - camera[1] + halfsizeScaler) * minExtent() * (1.0 / sizeScaler) + (height() - minExtent()) * 0.5);
 
   const world2canvasLength = length => length * minExtent() * (1.0 / sizeScaler);
 
@@ -85,7 +86,7 @@ const canvasUtils = (canvas) => {
 
   const fillPoly = (points) => {
     var ctx = getContext();
-    ctx.fillStyle = 'black';
+    ctx.fillStyle = '#000000EE';
     ctx.beginPath();
 
     const firstCanvas = world2canvas(points[0]);
@@ -121,4 +122,4 @@ const canvasUtils = (canvas) => {
   };
 }
 
-export default canvasUtils;
+export default primitiveRenderer;

@@ -4,6 +4,21 @@ import { vec2 } from 'gl-matrix'
 import KeyCodes from './keycodes'
 
 
+const getMovemement = (key1, key2, controlstate) => {
+  if (controlstate.isKeyPressed(key1) || controlstate.isKeyPressed(key2)) {
+    return controlstate.isKeyPressed(key1) ? -1 : 1;
+  }
+  return 0;
+}
+
+const getNormalizedMovement = (xkey1, xkey2, ykey1, ykey2, controlstate) => {
+  const nonNormalized = vec2.fromValues(getMovemement(xkey1, xkey2, controlstate), getMovemement(ykey1, ykey2, controlstate));
+  if (nonNormalized[0] === 0 && nonNormalized[1] === 0)
+    return nonNormalized;
+
+  return vec2.normalize([], nonNormalized)
+}
+
 const game = (canvas, controlstate, requestAnimFrame) => {  
   
   const PHYSICS_TIME_STEP = 10; // 100 fps
@@ -35,27 +50,20 @@ const game = (canvas, controlstate, requestAnimFrame) => {
       accumulator = 5 * PHYSICS_TIME_STEP;
     }
     
-    let xMovement = 0.0;
-    if (controlstate.isKeyPressed(KeyCodes.KEY_A) || controlstate.isKeyPressed(KeyCodes.KEY_D)) {
-      xMovement = controlstate.isKeyPressed(KeyCodes.KEY_A) ? -1 : 1;
-    }
-
-    let yMovement = 0.0;
-    if (controlstate.isKeyPressed(KeyCodes.KEY_W) || controlstate.isKeyPressed(KeyCodes.KEY_S)) {
-      yMovement = controlstate.isKeyPressed(KeyCodes.KEY_W) ? -1 : 1;
-    }
-
+    const cameraMovement = getNormalizedMovement(KeyCodes.KEY_LEFT, KeyCodes.KEY_RIGHT, KeyCodes.KEY_UP, KeyCodes.KEY_DOWN, controlstate)
+    const movement = getNormalizedMovement(KeyCodes.KEY_A, KeyCodes.KEY_D, KeyCodes.KEY_W, KeyCodes.KEY_S, controlstate)
     while (accumulator >= PHYSICS_TIME_STEP)
     {
-      const newPos = vec2.scaleAndAdd([], gamestate.player.pos, vec2.fromValues(xMovement, yMovement), 0.5);
-      gamestate.player.pos = newPos;
+      vec2.scaleAndAdd(gamestate.camera, gamestate.camera, cameraMovement, 0.5);
+      vec2.scaleAndAdd(gamestate.player.pos, gamestate.player.pos, movement, 0.5);
+      
       accumulator -= PHYSICS_TIME_STEP;
     }
-    const rend = renderer(canvas)
     gamestate.gametime = (curDrawTime - startTime) / 1000.0;
     gamestate.fps = calculateFPS();
-    rend.draw(gamestate);
-    rend.drawOverlay(gamestate)
+    const rend = renderer(canvas, gamestate)
+    rend.draw();
+    rend.drawOverlay()
     
     requestAnimFrame(tick);
   }

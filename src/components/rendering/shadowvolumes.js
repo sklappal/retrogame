@@ -29,10 +29,8 @@ const playerElementRayRect = (rectpos, rect, playerPos) => {
 }
 
 const findShadowVolume = (elementPos, elementModel, playerPos) => {
-  return elementModel.items.map(item => {
-    const rays = playerElementRayRect(elementPos, item, playerPos)
-    return createShadowVolume(playerPos, rays[0], rays[1]);
-  })
+  const rays = playerElementRayRect(elementPos, elementModel, playerPos)
+  return createShadowVolume(playerPos, rays[0], rays[1]);
 }
 
 const createShadowVolume = (playerPos, ray1, ray2) => {
@@ -44,9 +42,9 @@ const createShadowVolume = (playerPos, ray1, ray2) => {
       vec2.scaleAndAdd([], corner1, vec2.normalize(ray1, ray1), 1000.0)];
 }
 
-const findShadowVolumes = gamestate => {
+
+export const findShadowVolumes = gamestate => {
   const playerPos = gamestate.player.pos;
-  return gamestate.scene.items.flatMap(element => findShadowVolume(element.pos, element.model, playerPos));
+  return gamestate.scene.items.map(element => findShadowVolume(element.pos, element.model, playerPos));
 }
 
-export default findShadowVolumes;

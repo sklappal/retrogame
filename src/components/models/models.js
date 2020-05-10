@@ -6,7 +6,7 @@ const line = (from, to, color = "black") => {
   return {type: "line", from: from, to: to, color: color}
 }
 
-const rect = (width, height, color = "black") => {
+export const rect = (width = 20, height = 20, color = "black") => {
   return {type: "rect", width: width, height: height, color: color}
 }
 

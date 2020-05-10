@@ -2,7 +2,6 @@ import { vec2 } from 'gl-matrix'
 
 const primitiveRenderer = (canvas, camera) => {
 
-  console.log(camera)
   const sizeScaler = 100.0;
   const halfsizeScaler = sizeScaler * 0.5;
 
@@ -28,13 +27,13 @@ const primitiveRenderer = (canvas, camera) => {
     ctx.fillRect(0, 0, width(), height());
   }
 
-  const drawRadialGradient = (pos, radius) => {
+  const drawRadialGradient = (pos, radius, color) => {
     var ctx = getContext();
     var posCanvas = world2canvas(pos);
     var radiusCanvas = world2canvasLength(radius);
     var grd = ctx.createRadialGradient(posCanvas[0], posCanvas[1], 0.1, posCanvas[0], posCanvas[1], radiusCanvas);
-    grd.addColorStop(0.0, '#AAAAAA');
-    grd.addColorStop(0.5, '#000000');
+    grd.addColorStop(0.0, color);
+    grd.addColorStop(0.5, '#00000000');
     ctx.fillStyle = grd;
     ctx.fillRect(0, 0, width(), height());
   }
@@ -70,23 +69,50 @@ const primitiveRenderer = (canvas, camera) => {
     ctx.stroke(); 
   }
 
-  const drawModel = (pos, model) => {
-    model.items.forEach(element => {
-      if (element.type === "circle") {
-        drawCircle([pos[0] + element.pos[0], pos[1] + element.pos[1]], element.radius, element.color)
-      } else if (element.type === "line") {
-        drawLine([pos[0] + element.from[0], pos[1] + element.from[1]], [pos[0] + element.to[0], pos[1] + element.to[1]], element.color)
-      } else if (element.type === "rect") {
-        drawRect(pos, element.width, element.height, element.color)
-      } else {
-        console.log("unknown model shape")
-      }
+  const drawModel = (pos, element) => {
+    if (element.type === "circle") {
+      drawCircle([pos[0] + element.pos[0], pos[1] + element.pos[1]], element.radius, element.color)
+    } else if (element.type === "line") {
+      drawLine([pos[0] + element.from[0], pos[1] + element.from[1]], [pos[0] + element.to[0], pos[1] + element.to[1]], element.color)
+    } else if (element.type === "rect") {
+      drawRect(pos, element.width, element.height, element.color)
+    } else {
+      console.log("unknown model shape")
+    }
+  }
+
+  const drawCompositeModel = (pos, compositeModel) => {    
+    compositeModel.items.forEach(element => {
+      drawModel(pos, element)
     });
   }
 
-  const fillPoly = (points) => {
+  const fillPoly = (points, color = '#000000EE') => {
     var ctx = getContext();
-    ctx.fillStyle = '#000000EE';
+    ctx.fillStyle = color;
+    ctx.beginPath();
+
+    const firstCanvas = world2canvas(points[0]);
+    ctx.moveTo(firstCanvas[0], firstCanvas[1]);
+    for(var i = 1; i < points.length; i++) {
+      const canvas = world2canvas(points[i]);
+      ctx.lineTo(canvas[0], canvas[1])
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  const fillPolyRadial = (points, radialOrigin, radius, color = '#000000EE') => {
+    
+    var ctx = getContext();
+    var posCanvas = world2canvas(radialOrigin);
+    var radiusCanvas = world2canvasLength(radius);
+    var grd = ctx.createRadialGradient(posCanvas[0], posCanvas[1], 0.1, posCanvas[0], posCanvas[1], radiusCanvas);
+    grd.addColorStop(0.0, color);
+    grd.addColorStop(0.5, '#00000000');
+    
+    var ctx = getContext();
+    ctx.fillStyle = grd;
     ctx.beginPath();
 
     const firstCanvas = world2canvas(points[0]);
@@ -117,8 +143,10 @@ const primitiveRenderer = (canvas, camera) => {
     drawSquare: drawSquare,
     drawLine: drawLine,
     drawModel: drawModel,
+    drawCompositeModel: drawCompositeModel,
     drawTextCanvas: drawTextCanvas,
-    fillPoly: fillPoly
+    fillPoly: fillPoly,
+    fillPolyRadial: fillPolyRadial
   };
 }
 

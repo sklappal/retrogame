@@ -55,7 +55,7 @@ const game = (canvas, controlstate, requestAnimFrame) => {
     while (accumulator >= PHYSICS_TIME_STEP)
     {
       vec2.scaleAndAdd(gamestate.camera, gamestate.camera, cameraMovement, 0.5);
-      vec2.scaleAndAdd(gamestate.player.pos, gamestate.player.pos, movement, 0.5);
+      vec2.scaleAndAdd(gamestate.player.pos, gamestate.player.pos, movement, 0.1);
       
       accumulator -= PHYSICS_TIME_STEP;
     }

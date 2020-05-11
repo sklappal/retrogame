@@ -113,16 +113,22 @@ const primitiveRenderer = (canvas, camera) => {
     
     var ctx = getContext();
     ctx.fillStyle = grd;
+    ctx.strokeStyle = "white"
     ctx.beginPath();
 
-    const firstCanvas = world2canvas(points[0]);
+    const canvasPoints = points.map(p => world2canvas(p));
+
+    const firstCanvas = canvasPoints[0];
     ctx.moveTo(firstCanvas[0], firstCanvas[1]);
     for(var i = 1; i < points.length; i++) {
-      const canvas = world2canvas(points[i]);
+      const canvas = canvasPoints[i];
       ctx.lineTo(canvas[0], canvas[1])
     }
     ctx.closePath();
     ctx.fill();
+    ctx.stroke();
+
+    canvasPoints.forEach((p, i) => drawTextCanvas(p, i+1))
   }
 
   const drawTextCanvas = (pos, text) => {

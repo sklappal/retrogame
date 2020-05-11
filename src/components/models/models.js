@@ -6,13 +6,14 @@ const line = (from, to, color = "black") => {
   return {type: "line", from: from, to: to, color: color}
 }
 
-export const rect = (width = 20, height = 20, color = "black") => {
+export const rect = (width = 20, height = 20, color = "#ff0000aa") => {
   return {type: "rect", width: width, height: height, color: color}
 }
 
 export const playerModel = {
   items: [
-    circle([0.0, 0.0], 1.0), // head
+    circle([0.0, 0.0], 0.2)
+  /*  circle([0.0, 0.0], 1.0), // head
     circle([-0.25,-0.1], 0.1, "white"), // eye
     circle([0.25,-0.1], 0.1, "white"), // eye
     circle([0.0,0.5], 0.2, "white"), // mouth
@@ -21,7 +22,7 @@ export const playerModel = {
     line([-1.0, 6.5], [0.0, 4.0]), // left leg
     line([1.0, 6.5], [0.0, 4.0]), // right leg
     line([1.8, 2.0], [2.0, 1.0]), // torch
-    circle([2.0, 0.5], 0.2, "white") // torch bulb
+    circle([2.0, 0.5], 0.2, "white") // torch bulb*/
   ]
 }
 

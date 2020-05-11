@@ -1,37 +1,34 @@
 import primitiveRenderer from './primitiverenderer'
-import { findShadowVolumes, findLightVolumes, findLightVolume2 } from './shadowvolumes'
+import { findLightVolumes } from './lightvolumes'
 
 const renderer = (canvas, gamestate) => {
   const pr = primitiveRenderer(canvas, gamestate.camera);
 
   const drawLighting = () => {
-    pr.drawRadialGradient([gamestate.player.pos[0], gamestate.player.pos[1]+2.0], 140.0 + Math.sin(gamestate.gametime*3)*2.0, "#FFFFFFFF")
+    const lightvolumes = findLightVolumes(gamestate);
+    pr.fillPolyRadial(lightvolumes, gamestate.player.pos, 140, "white")
+    
+  //  lightvolumes.forEach(el => pr.drawLine(gamestate.player.pos, el, "white"))
 
   }
 
   const drawPlayer = () => {
     const pos = gamestate.player.pos
-    pr.drawCompositeModel(pos, gamestate.player.compositeModel);
+    pr.drawCircle(pos, 1.0, "red")
+    //pr.drawCompositeModel(pos, gamestate.player.compositeModel);
   }
 
   const drawWorld = () => {
     gamestate.scene.items.forEach(el => pr.drawModel(el.pos, el.model))
   }
 
-  const drawShadows = () => {
-    const shadowVolumes = findShadowVolumes(gamestate)
-    shadowVolumes.forEach(el => pr.fillPoly(el))
-  }
-
   return {
     draw: () => {
-      const ctx = pr.getContext();
-      ctx.globalCompositeOperation = "source-over";
       pr.clearCanvas();
+      
       drawLighting();
-      drawPlayer();
       drawWorld();
-      drawShadows();
+      drawPlayer();
     },
     drawOverlay: () => {
       var text = "FPS: " + gamestate.fps.toFixed(1)   

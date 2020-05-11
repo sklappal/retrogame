@@ -41,7 +41,7 @@ class Game extends React.Component {
   }
 
   OnWheelCB() {
-    console.log("mouse wheel")
+  //  console.log("mouse wheel") WTF??
   }
 
   OnKeyDownCB(evt) {

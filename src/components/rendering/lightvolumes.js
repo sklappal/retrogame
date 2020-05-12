@@ -10,10 +10,10 @@ const playerElementRayRect = (rectpos, rect, playerPos) => {
 
   const rays = corners.map(c => vec2.sub(vec2.create(), c, playerPos));
 
-  var maxAngle = 0.0;
-  var ray1, ray2;
-  for (var i = 0; i < rays.length-1; i++) {
-    for (var j = 1; j < rays.length; j++) {
+  let maxAngle = 0.0;
+  let ray1, ray2;
+  for (let i = 0; i < rays.length-1; i++) {
+    for (let j = 1; j < rays.length; j++) {
       if (i !== j) {
         const angle = vec2.angle(rays[i], rays[j])
         if (angle > maxAngle) {
@@ -34,13 +34,6 @@ const findElementSegments = (elementPos, elementModel, playerPos) => {
   }
   return playerElementRayRect(elementPos, elementModel, playerPos);
 }
-
-const createVolume = (playerPos, ray1, ray2) => {
-  const corner1 = vec2.add([], playerPos, ray1)
-  const corner2 = vec2.add([], playerPos, ray2)
-  return [playerPos, corner1, corner2];
-}
-
 
 const toPolar = (vec) => {
   return [vec2.length(vec), Math.atan2(vec[1], vec[0])]
@@ -68,16 +61,16 @@ const getCevianLength = (bv, cv, angle_bc, cevian_angle) => {
 }
 
 export const rayLineIntersection = (ray, point1, point2) => {
-    var v1 = vec2.scale(vec2.create(), point1, -1.0)
-    var v2 = vec2.sub(vec2.create(), point2, point1)
-    var v3 = vec2.fromValues(-ray[1], ray[0])
+    const v1 = vec2.scale(vec2.create(), point1, -1.0)
+    const v2 = vec2.sub(vec2.create(), point2, point1)
+    const v3 = vec2.fromValues(-ray[1], ray[0])
 
-    var dot = vec2.dot(v2, v3);
+    const dot = vec2.dot(v2, v3);
     if (Math.abs(dot) < 1e-6)
-        return {intersect: false}
+      return {intersect: false}
 
-    var t1 = ((v2[0]*v1[1]) - (v2[1]*v1[0])) / dot;
-    var t2 = (vec2.dot(v1, v3)) / dot;
+    const t1 = ((v2[0]*v1[1]) - (v2[1]*v1[0])) / dot;
+    const t2 = (vec2.dot(v1, v3)) / dot;
 
     if (t1 >= 0.0 && (t2 >= -0.001 && t2 <= 1.001)) // consider epsilon
         return {intersect: true, distance: t1};
@@ -160,7 +153,7 @@ const purgeOccludedSegments = (segments) => {
     const thisPair = segments[i]
 
     for (var j = 0; j < segments.length; j++) {
-      if (i != j) {
+      if (i !== j) {
         const otherPair = segments[j]
         
         if (isSegmentOccluded(thisPair, otherPair)) {
@@ -225,10 +218,6 @@ export const findLightVolumes = gamestate => {
 
   const segmentsPurged = purgeOccludedSegments(segmentsNonPurged);
 
-  if (segmentsPurged.length !== segmentsNonPurged.length) {
-    console.log("purged", segmentsNonPurged.length - segmentsPurged.length, "hidden segments")
-  }
-
   const farAwayDistance = wallDistance + 10.0
 
   const segmentsFiltered = segmentsPurged.filter(segment => {
@@ -238,10 +227,6 @@ export const findLightVolumes = gamestate => {
     return d < farAwayDistance;
   });
 
-  if (segmentsPurged.length !== segmentsFiltered.length) {
-    console.log("purged", segmentsPurged.length - segmentsFiltered.length, "far away segments")
-  }
-
   const segments = segmentsFiltered.map((segment, i) => {
     return {segment: segment, id: i}
   });
@@ -250,11 +235,10 @@ export const findLightVolumes = gamestate => {
     .flatMap(segment => [sp(segment), ep(segment)])
     .sort((p1, p2) => p1.point[1] - p2.point[1])
 
-  
 
   let startIndex = 0;  
-  for (var i = 0; i < allPoints.length; i++) {
-    var currentPoint = allPoints[i];
+  for (let i = 0; i < allPoints.length; i++) {
+    const currentPoint = allPoints[i];
     if (currentPoint.startingPoint) {
       let hidden = false;
       segments.forEach(segment => {
@@ -285,7 +269,7 @@ export const findLightVolumes = gamestate => {
 
   let triangleStart = startPoint.point;
 
-  for (var i = 1; i < allPoints.length*2; i++) {
+  for (let i = 1; i < allPoints.length*2; i++) {
     const currentPoint = allPoints[(startIndex + i) % allPoints.length];
     if (!currentPoint.startingPoint) {
       open.delete(currentPoint.segment)

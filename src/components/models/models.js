@@ -1,8 +1,8 @@
-const circle = (pos, radius, color = "black") => { 
+export const circle = (pos, radius, color = "black") => { 
   return {type: "circle", pos: pos, radius: radius, color: color}
 }
 
-const line = (from, to, color = "black") => {
+export const line = (from, to, color = "black") => {
   return {type: "line", from: from, to: to, color: color}
 }
 

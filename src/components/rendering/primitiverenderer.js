@@ -112,7 +112,6 @@ const primitiveRenderer = (canvas, camera) => {
     grd.addColorStop(0.0, color);
     grd.addColorStop(0.5, '#00000000');
     
-    var ctx = getContext();
     ctx.fillStyle = grd;
     ctx.strokeStyle = "white"
     ctx.beginPath();

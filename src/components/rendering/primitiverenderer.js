@@ -1,4 +1,5 @@
 import { vec2 } from 'gl-matrix'
+import { gamestate } from '../game/gamestate';
 
 const primitiveRenderer = (canvas, camera) => {
 
@@ -23,7 +24,7 @@ const primitiveRenderer = (canvas, camera) => {
 
   const clearCanvas = () => {
     var ctx = getContext();
-    ctx.fillStyle = "black";
+    ctx.fillStyle = "#080808";
     ctx.fillRect(0, 0, width(), height());
   }
 
@@ -126,9 +127,11 @@ const primitiveRenderer = (canvas, camera) => {
     }
     ctx.closePath();
     ctx.fill();
-    ctx.stroke();
+    if (gamestate.debug)
+      ctx.stroke();
 
-    canvasPoints.forEach((p, i) => drawTextCanvas(p, i+1))
+    if (gamestate.debug)
+      canvasPoints.forEach((p, i) => drawTextCanvas(p, i+1))
   }
 
   const drawTextCanvas = (pos, text) => {

@@ -6,7 +6,10 @@ const renderer = (canvas, gamestate) => {
 
   const drawLighting = () => {
     const lightvolumes = findLightVolumes(gamestate);
-    pr.fillPolyRadial(lightvolumes, gamestate.player.pos, 140, "white")
+    const ctx = pr.getContext()
+    ctx.filter = "blur(2px)"
+    pr.fillPolyRadial(lightvolumes, gamestate.player.pos, 120, "#AAAAAA")
+    ctx.filter = "none"
     
   //  lightvolumes.forEach(el => pr.drawLine(gamestate.player.pos, el, "white"))
 

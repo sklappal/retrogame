@@ -38,6 +38,8 @@ const game = (canvas, controlstate, requestAnimFrame) => {
     }
   })();
 
+  const gs = gamestate();
+  
   const tick = () => {
     prevDrawTime = curDrawTime;
     curDrawTime = new Date().getTime();
@@ -49,19 +51,18 @@ const game = (canvas, controlstate, requestAnimFrame) => {
     {
       accumulator = 5 * PHYSICS_TIME_STEP;
     }
-    
     const cameraMovement = getNormalizedMovement(KeyCodes.KEY_LEFT, KeyCodes.KEY_RIGHT, KeyCodes.KEY_UP, KeyCodes.KEY_DOWN, controlstate)
     const movement = getNormalizedMovement(KeyCodes.KEY_A, KeyCodes.KEY_D, KeyCodes.KEY_W, KeyCodes.KEY_S, controlstate)
     while (accumulator >= PHYSICS_TIME_STEP)
     {
-      vec2.scaleAndAdd(gamestate.camera, gamestate.camera, cameraMovement, 0.5);
-      vec2.scaleAndAdd(gamestate.player.pos, gamestate.player.pos, movement, 0.1);
+      vec2.scaleAndAdd(gs.camera, gs.camera, cameraMovement, 0.5);
+      vec2.scaleAndAdd(gs.player.pos, gs.player.pos, movement, gs.player.speed);
       
       accumulator -= PHYSICS_TIME_STEP;
     }
-    gamestate.gametime = (curDrawTime - startTime) / 1000.0;
-    gamestate.fps = calculateFPS();
-    const rend = renderer(canvas, gamestate)
+    gs.gametime = (curDrawTime - startTime) / 1000.0;
+    gs.fps = calculateFPS();
+    const rend = renderer(canvas, gs)
     rend.draw();
     rend.drawOverlay()
     

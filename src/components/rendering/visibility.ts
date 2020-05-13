@@ -156,6 +156,16 @@ export const isPointBehindLine = (p1: vec2, p2: vec2, p: vec2) => {
   return ((p[0]-p1[0])*(p2[1]-p1[1]) - (p[1]-p1[1])*(p2[0]-p1[0])) > 0.0
 }
 
+// from origin
+const distanceToSegmentSquared = (p1: vec2, p2: vec2) => {
+  
+  const distanceSquared = vec2.squaredDistance(p1, p2);
+  var t = ((- p1[0]) * (p2[0] - p1[0]) + (- p1[1]) * (p2[1] - p1[1])) / distanceSquared;
+  t = Math.max(0, Math.min(1, t));
+  return  vec2.sqrLen([p1[0] + t * (p2[0] - p1[0]),
+                    p1[1] + t * (p2[1] - p1[1])]);
+}
+
 const isPointBehindSegment = (segment: Segment, polar: vec2) => {
   const p1 = toCartesian(segment.from)
   const p2 = toCartesian(segment.to)
@@ -242,11 +252,22 @@ const intersectionsAlongRay = (angle: number, segments: ReadonlyArray<Segment>) 
     .sort((a, b) => a.distance - b.distance)
 }
 
-export const findVisibleRegion = (pos: vec2, items: ReadonlyArray<SceneObject>) => {
+export const findVisibleRegion = (pos: vec2, radius:number, items: ReadonlyArray<SceneObject>) => {
   const playerPos = pos;
-  const elementSegments =  items.map(element => findElementSegments(element.pos, element.model, playerPos));
+  const elementSegments = items.map(element => findElementSegments(element.pos, element.model, playerPos));
 
-  const wallDistance = 250.0;
+  const radiusSquared = radius*radius;
+  elementSegments.filter(el => distanceToSegmentSquared(el[0], el[1]) < radiusSquared)
+
+  const wallDistanceSquared = elementSegments.reduce((acc, curr) => {
+      const dist = distanceToSegmentSquared(curr[0], curr[1]);
+      if (dist > acc) {
+        return dist;
+      }
+      return acc;
+  }, 0.0) ;
+
+  const wallDistance = Math.sqrt(wallDistanceSquared) + 1.0;
 
   elementSegments.push([[-wallDistance, -wallDistance], [wallDistance, -wallDistance]])
   elementSegments.push([[wallDistance, -wallDistance], [wallDistance, wallDistance]])
@@ -267,16 +288,7 @@ export const findVisibleRegion = (pos: vec2, items: ReadonlyArray<SceneObject>) 
     return {from: r0, to: r1, id: i}
   })
 
-  const segmentsPurged = purgeOccludedSegments(segmentsNonPurged);
-
-  const farAwayDistance = wallDistance + 10.0
-
-  const segments = segmentsPurged.filter(segment => {
-    const angle = angleFromT1toT2(segment.from, segment.to);
-    const d = getCevianLength(segment.from, segment.to, angle, angle*0.5);
-
-    return d < farAwayDistance;
-  });
+  const segments = purgeOccludedSegments(segmentsNonPurged);
 
   const allPoints = segments
     .flatMap(segment => [sp(segment), ep(segment)])

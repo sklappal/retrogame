@@ -6,8 +6,8 @@ export interface PrimitiveRenderer {
   getContext(): CanvasRenderingContext2D
   width(): number
   height(): number
-  canvasDimensionsWorld(): {pos: vec2, width: number, height: number}
 
+  drawLine(from: vec2, to: vec2, color: string): void
   drawCircle(pos: vec2, radius: number, color: string): void
   drawModel(pos: vec2, element: Model): void
   fillPolyRadial(points: ReadonlyArray<vec2>, radialOrigin: vec2, radius: number, color: string): void
@@ -34,14 +34,6 @@ export const getPrimitiveRenderer = (canvas: HTMLCanvasElement, gamestate: GameS
 
   const minExtent = () => Math.min(width(), height());
 
-  const canvasDimensionsWorld = () => {
-    return {
-      pos: canvas2world(vec2.fromValues(0.0, 0.0)),
-      width: canvas2worldLength(width()),
-      height: canvas2worldLength(height())
-    }
-  }
-
   const pixelSize = () => minExtent() * (1.0 / sizeScaler);
 
   const world2canvas = (pos: vec2) => vec2.fromValues(
@@ -50,26 +42,13 @@ export const getPrimitiveRenderer = (canvas: HTMLCanvasElement, gamestate: GameS
 
   const world2canvasLength = (length: number) => length * pixelSize();
 
-  const canvas2worldLength = (pixelCount: number) => pixelCount * (1.0 / pixelSize());
-
   const canvas2world = (pos: vec2) => vec2.fromValues(
     (pos[0] - (width() - minExtent())*0.5) / pixelSize() - halfsizeScaler + camera.pos[0],
     (pos[1] - (height() - minExtent())*0.5) / pixelSize() - halfsizeScaler + camera.pos[1]);
 
   const clearCanvas = () => {
     var ctx = getContext();
-    ctx.fillStyle = "#080808";
-    ctx.fillRect(0, 0, width(), height());
-  }
-
-  const drawRadialGradient = (pos: vec2, radius: number, color: string) => {
-    var ctx = getContext();
-    var posCanvas = world2canvas(pos);
-    var radiusCanvas = world2canvasLength(radius);
-    var grd = ctx.createRadialGradient(posCanvas[0], posCanvas[1], 0.1, posCanvas[0], posCanvas[1], radiusCanvas);
-    grd.addColorStop(0.0, color);
-    grd.addColorStop(0.5, '#00000000');
-    ctx.fillStyle = grd;
+    ctx.fillStyle = gamestate.scene.ambientColor;
     ctx.fillRect(0, 0, width(), height());
   }
 
@@ -178,10 +157,9 @@ export const getPrimitiveRenderer = (canvas: HTMLCanvasElement, gamestate: GameS
     getContext: getContext,
     width: width,
     height: height,
-    canvasDimensionsWorld: canvasDimensionsWorld,
     world2canvas: world2canvas,
+    canvas2world: canvas2world,
     clearCanvas: clearCanvas,
-    drawRadialGradient:  drawRadialGradient,
     drawCircle: drawCircle,
     drawRect: drawRect,
     drawSquare: drawSquare,

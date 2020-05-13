@@ -15,6 +15,7 @@ class Game extends React.Component {
     this.controlstate = {
       mouse: {
         pos: vec2.fromValues(0.0, 0.0),
+        posCanvas: vec2.fromValues(0.0, 0.0),
         buttons: new Set()
       },
       keyboard: {
@@ -40,7 +41,7 @@ class Game extends React.Component {
   OnMouseMoveCB(evt: { clientX: any; clientY: any; }) {    
     const x = evt.clientX;
     const y = evt.clientY;
-    this.controlstate.mouse.pos = this.ScreenToCanvas(x, y);
+    this.controlstate.mouse.posCanvas = this.ScreenToCanvas(x, y);
   }
 
   OnKeyDownCB(evt: { keyCode: number; }) {

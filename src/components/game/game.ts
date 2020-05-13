@@ -43,6 +43,8 @@ const game = (canvas: HTMLCanvasElement, controlstate: ControlState, requestAnim
 
     const primitiveRenderer = getPrimitiveRenderer(canvas, gamestate);
 
+    controlstate.mouse.pos = primitiveRenderer.canvas2world(controlstate.mouse.posCanvas)
+
     const simulator = getSimulator(gamestate, controlstate);
     
     while (accumulator >= PHYSICS_TIME_STEP)

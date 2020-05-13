@@ -30,12 +30,13 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState) =
     const cameraMovement = getMovementVector(KeyCodes.KEY_LEFT, KeyCodes.KEY_RIGHT, KeyCodes.KEY_UP, KeyCodes.KEY_DOWN, controlstate, 0.5);
     gamestate.camera.velocity = cameraMovement;
 
-    const playerAcceleration = getMovementVector(KeyCodes.KEY_A, KeyCodes.KEY_D, KeyCodes.KEY_W, KeyCodes.KEY_S, controlstate, gamestate.player.acceleration)
+    const mouseToPlayer = vec2.sub(vec2.create(), controlstate.mouse.pos, gamestate.player.pos)
+    gamestate.player.aimAngle = Math.atan2(mouseToPlayer[1], mouseToPlayer[0]);
 
-    
+    const playerAcceleration = getMovementVector(KeyCodes.KEY_A, KeyCodes.KEY_D, KeyCodes.KEY_W, KeyCodes.KEY_S, controlstate, gamestate.player.acceleration)
     if (playerAcceleration[0] === 0.0) gamestate.player.velocity[0] *= 0.92
     if (playerAcceleration[1] === 0.0) gamestate.player.velocity[1] *= 0.92
-    
+
     vec2.add(gamestate.player.velocity, gamestate.player.velocity, playerAcceleration)
     clamp(gamestate.player.velocity, gamestate.player.maxSpeed)
     

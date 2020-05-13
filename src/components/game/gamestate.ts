@@ -4,6 +4,7 @@ import { Model, rect, circle } from '../models/models'
 export interface ControlState {
     mouse: {
       pos: vec2,
+      posCanvas: vec2,
       buttons: Set<number>
     }
 
@@ -20,6 +21,7 @@ export interface Player  {
   maxSpeed: number
   acceleration: number
   model: Model
+  aimAngle: number
 }
 
 export interface Camera   {
@@ -41,8 +43,10 @@ export interface SceneObject {
 }
 
 export interface Scene {
+  light: vec2,
   items: ReadonlyArray<SceneObject>
   isInsideObject: (pos: vec2) => boolean
+  ambientColor: string
 }
 
 export interface GameState {
@@ -59,7 +63,8 @@ const player = {
   velocity: vec2.fromValues(0.0, 0.0),
   model: circle(1.0, "red"),
   maxSpeed: 0.5,
-  acceleration: 0.5
+  acceleration: 0.5,
+  aimAngle: 0.0
 }
 
 const createObject  = (thisPos: vec2, model: Model) => {
@@ -79,7 +84,7 @@ export const getGameState = () : GameState => {
     for (var j = 0; j < count; j++) {
       items.push(createObject(
         vec2.fromValues((i-count/2) * (width + 2*margin) + margin + width*0.5, (j-count/2) *(width + 2*margin) + margin + width*0.5),
-        rect( width, width, "#222222")));
+        rect( width, width, "black")));
     }
   }
 
@@ -87,7 +92,7 @@ export const getGameState = () : GameState => {
     const angle = i * 2 * Math.PI / 12;
     items.push(createObject(
       vec2.fromValues(Math.cos(angle) * 60.0 , Math.sin(angle) * 60.0),
-      circle(10.0,  "#222222")
+      circle(10.0, "black")
     ));
   }
 
@@ -100,8 +105,10 @@ export const getGameState = () : GameState => {
       fieldOfview: 100.0
     },
     scene: {
+      light: vec2.fromValues(10.0, 10.0),
       items: items,
-      isInsideObject: (pos: vec2) => items.some(item => item.isInside(pos))
+      isInsideObject: (pos: vec2) => items.some(item => item.isInside(pos)),
+      ambientColor: "#080808"
      },
     gametime: 0.0,
     fps: 0.0

@@ -30,11 +30,13 @@ export interface Config {
 
 export interface SceneObject {
   model: Model,
-  pos: vec2
+  pos: vec2,
+  isInside: (v: vec2) => boolean
 }
 
 export interface Scene {
   items: ReadonlyArray<SceneObject>
+  isInsideObject: (pos: vec2) => boolean
 }
 
 export interface GameState {
@@ -52,14 +54,24 @@ const player = {
   speed: 0.5
 }
 
-export const gamestate = () : GameState => {
+const createObject  = (thisPos: vec2, model: Model) => {
+  return {
+    pos: thisPos,
+    model: model,
+    isInside: (pos: vec2) => model.isInside(vec2.fromValues(pos[0] - thisPos[0], pos[1] - thisPos[1]))
+  }
+}
+
+export const getGameState = () : GameState => {
   var items: SceneObject[] = []
-  for (var i = 0; i < 10; i++) {
-    for (var j = 0; j < 10; j++) {
-      items.push({
-        pos: vec2.fromValues((i-5) * 8.0, (j-5) * 8.0),
-        model: rect( 4, 4, "#222222")
-      });
+  const count = 10
+  const width = 3
+  const margin = 1
+  for (var i = 0; i < count; i++) {
+    for (var j = 0; j < count; j++) {
+      items.push(createObject(
+        vec2.fromValues((i-count/2) * (width + 2*margin) + margin + width*0.5, (j-count/2) *(width + 2*margin) + margin + width*0.5),
+        rect( width, width, "#222222")));
     }
   }
 
@@ -67,7 +79,10 @@ export const gamestate = () : GameState => {
     config: {debug: false},
     player: player,
     camera: {pos: vec2.fromValues(0.0, 0.0)},
-    scene: { items },
+    scene: {
+      items: items,
+      isInsideObject: (pos: vec2) => items.some(item => item.isInside(pos))
+     },
     gametime: 0.0,
     fps: 0.0
   }

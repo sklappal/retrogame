@@ -1,23 +1,7 @@
-import renderer from '../rendering/renderer'
-import { gamestate, ControlState } from './gamestate'
-import { vec2 } from 'gl-matrix'
-import KeyCodes from './keycodes'
+import { getRenderer } from '../rendering/renderer'
+import { getGameState, ControlState } from './gamestate'
+import { getSimulator } from '../simulator/simulator';
 
-
-const getMovemement = (key1: number, key2: number, controlstate: ControlState) => {
-  if (controlstate.isKeyPressed(key1) || controlstate.isKeyPressed(key2)) {
-    return controlstate.isKeyPressed(key1) ? -1 : 1;
-  }
-  return 0;
-}
-
-const getNormalizedMovement = (xkey1: number, xkey2: number, ykey1: number, ykey2: number, controlstate: ControlState) => {
-  const nonNormalized = vec2.fromValues(getMovemement(xkey1, xkey2, controlstate), getMovemement(ykey1, ykey2, controlstate));
-  if (nonNormalized[0] === 0 && nonNormalized[1] === 0)
-    return nonNormalized;
-
-  return vec2.normalize(vec2.create(), nonNormalized)
-}
 
 const game = (canvas: HTMLCanvasElement, controlstate: ControlState, requestAnimFrame: any) => {  
   
@@ -38,7 +22,7 @@ const game = (canvas: HTMLCanvasElement, controlstate: ControlState, requestAnim
     }
   })();
 
-  const gs = gamestate();
+  const gamestate = getGameState();
   
   const tick = () => {
     prevDrawTime = curDrawTime;
@@ -51,20 +35,19 @@ const game = (canvas: HTMLCanvasElement, controlstate: ControlState, requestAnim
     {
       accumulator = 5 * PHYSICS_TIME_STEP;
     }
-    const cameraMovement = getNormalizedMovement(KeyCodes.KEY_LEFT, KeyCodes.KEY_RIGHT, KeyCodes.KEY_UP, KeyCodes.KEY_DOWN, controlstate)
-    const movement = getNormalizedMovement(KeyCodes.KEY_A, KeyCodes.KEY_D, KeyCodes.KEY_W, KeyCodes.KEY_S, controlstate)
+    
+    gamestate.gametime = (curDrawTime - startTime) / 1000.0;
+    gamestate.fps = calculateFPS();
+   
+    const simulator = getSimulator(gamestate, controlstate);
     while (accumulator >= PHYSICS_TIME_STEP)
     {
-      vec2.scaleAndAdd(gs.camera.pos, gs.camera.pos, cameraMovement, 0.5);
-      vec2.scaleAndAdd(gs.player.pos, gs.player.pos, movement, gs.player.speed);
-      
+      simulator.simulate();
       accumulator -= PHYSICS_TIME_STEP;
     }
-    gs.gametime = (curDrawTime - startTime) / 1000.0;
-    gs.fps = calculateFPS();
-    const rend = renderer(canvas, gs)
-    rend.draw();
-    rend.drawOverlay()
+    const renderer = getRenderer(canvas, gamestate)
+    renderer.draw();
+    renderer.drawOverlay()
     
     requestAnimFrame(tick);
   }

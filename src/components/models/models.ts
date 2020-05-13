@@ -1,3 +1,4 @@
+import { vec2 } from "gl-matrix"
 
 export interface Rect {
   width: number;
@@ -12,13 +13,15 @@ export interface Model {
   color: string;
   shape: Rect | Circle;
   kind: string
+  isInside: (pos: vec2) => boolean;
 }
 
 export const circle = (radius: number, color = "black") : Model => { 
   return {
     shape: { radius: radius},
     kind: "circle",
-    color: color
+    color: color,
+    isInside: pos => vec2.squaredLength(pos) <= radius*radius
   }
 }
 
@@ -31,6 +34,7 @@ export const rect = (width = 5, height = 5, color = "black") : Model => {
   return {
     shape: { width: width, height: height},
     kind: "rect",
-    color: color
+    color: color,
+    isInside: pos => -width*0.5 <= pos[0] && pos[0] <= width*0.5 && -height*0.5 <= pos[1] && pos[1] <= height*0.5
   }
 }

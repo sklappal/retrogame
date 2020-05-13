@@ -2,7 +2,7 @@ import primitiveRenderer from './primitiverenderer'
 import { findVisibleRegion } from './visibility'
 import { GameState } from '../game/gamestate';
 
-const renderer = (canvas : HTMLCanvasElement, gamestate: GameState) => {
+export const getRenderer = (canvas : HTMLCanvasElement, gamestate: GameState) => {
   const pr = primitiveRenderer(canvas, gamestate);
 
   const drawLighting = () => {
@@ -36,5 +36,3 @@ const renderer = (canvas : HTMLCanvasElement, gamestate: GameState) => {
     }
   }
 }
-
-export default renderer;

@@ -8,12 +8,12 @@ interface Segment {
   to: vec2
 }
 
-const playerElementRayRect = (rectpos: vec2, rect: Rect, playerPos: vec2):vec2[] => {
+const playerElementRayRect = (rectpos: vec2, rect: Rect, playerPos: vec2): vec2[] => {
   const corners: vec2[] = [
-    [rectpos[0], rectpos[1]], 
-    [rectpos[0] + rect.width, rectpos[1]],
-    [rectpos[0], rectpos[1] + rect.height],
-    [rectpos[0] + rect.width, rectpos[1] + rect.height]
+    [rectpos[0] - rect.width * 0.5, rectpos[1] - rect.height * 0.5], 
+    [rectpos[0] + rect.width * 0.5, rectpos[1] - rect.height * 0.5],
+    [rectpos[0] - rect.width * 0.5, rectpos[1] + rect.height * 0.5],
+    [rectpos[0] + rect.width * 0.5, rectpos[1] + rect.height * 0.5]
   ];
 
   const rays: vec2[] = corners.map(c => vec2.sub(vec2.create(), c, playerPos));
@@ -40,7 +40,7 @@ const playerElementRayRect = (rectpos: vec2, rect: Rect, playerPos: vec2):vec2[]
 const findElementSegments = (elementPos: vec2, elementModel: Model, playerPos :vec2) => {
   if (elementModel.kind !== "rect") {
     console.log("Non-supported element type")
-    throw "Non-supported element type"
+    throw new Error("Non-supported element type")
   }
   return playerElementRayRect(elementPos, elementModel.shape as Rect, playerPos);
 }

@@ -52,7 +52,8 @@ const primitiveRenderer = (canvas: HTMLCanvasElement, gamestate: GameState) => {
   }
 
   const drawRect = (pos: vec2, w: number, h: number, color = "black") => {
-    const posCanvas = world2canvas(pos);
+    const posAdjusted = vec2.fromValues(pos[0] - w*0.5, pos[1] - h*0.5);
+    const posCanvas = world2canvas(posAdjusted);
     var ctx = getContext();
     ctx.fillStyle = color;
     ctx.fillRect(posCanvas[0], posCanvas[1], world2canvasLength(w), world2canvasLength(h));

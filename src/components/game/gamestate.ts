@@ -15,15 +15,19 @@ export interface ControlState {
 }
 
 export interface Player  {
-  pos: vec2,
-  speed: number,
-  model: Model,
+  pos: vec2
+  velocity: vec2
+  maxSpeed: number
+  acceleration: number
+  model: Model
 }
 
 export interface Camera   {
-  pos: vec2,
+  pos: vec2
+  velocity: vec2
+
   // number of world units visible on the smaller dimension of camera
-  fieldOfview: number;
+  fieldOfview: number
 }
 
 export interface Config {
@@ -31,8 +35,8 @@ export interface Config {
 }
 
 export interface SceneObject {
-  model: Model,
-  pos: vec2,
+  model: Model
+  pos: vec2
   isInside: (v: vec2) => boolean
 }
 
@@ -42,18 +46,20 @@ export interface Scene {
 }
 
 export interface GameState {
-  player: Player,
-  camera: Camera,  
-  scene: Scene,
-  config: Config,
-  gametime: number,
+  player: Player
+  camera: Camera
+  scene: Scene
+  config: Config
+  gametime: number
   fps: number
 }
 
 const player = {
   pos: vec2.fromValues(0.0, 0.0),
+  velocity: vec2.fromValues(0.0, 0.0),
   model: circle(1.0, "red"),
-  speed: 0.5
+  maxSpeed: 0.5,
+  acceleration: 0.5
 }
 
 const createObject  = (thisPos: vec2, model: Model) => {
@@ -90,6 +96,7 @@ export const getGameState = () : GameState => {
     player: player,
     camera: {
       pos: vec2.fromValues(0.0, 0.0),
+      velocity: vec2.fromValues(0.0, 0.0),
       fieldOfview: 100.0
     },
     scene: {

@@ -19,9 +19,31 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState) =
     return vec2.scale(vec2.create(), vec2.normalize(vec2.create(), nonNormalized), speed);
   }
 
+  const clamp = (vec: vec2, max: number) => {
+    const len = vec2.length(vec);
+    if (len > max) {
+      vec2.scale(vec, vec, max/len)
+    }
+  }
+
+  const handleInputs = () => {
+    const cameraMovement = getMovementVector(KeyCodes.KEY_LEFT, KeyCodes.KEY_RIGHT, KeyCodes.KEY_UP, KeyCodes.KEY_DOWN, controlstate, 0.5);
+    gamestate.camera.velocity = cameraMovement;
+
+    const playerAcceleration = getMovementVector(KeyCodes.KEY_A, KeyCodes.KEY_D, KeyCodes.KEY_W, KeyCodes.KEY_S, controlstate, gamestate.player.acceleration)
+
+    
+    if (playerAcceleration[0] === 0.0) gamestate.player.velocity[0] *= 0.92
+    if (playerAcceleration[1] === 0.0) gamestate.player.velocity[1] *= 0.92
+    
+    vec2.add(gamestate.player.velocity, gamestate.player.velocity, playerAcceleration)
+    clamp(gamestate.player.velocity, gamestate.player.maxSpeed)
+    
+  }
+
   const handleCamera = () => {
-    const cameraMovement = getMovementVector(KeyCodes.KEY_LEFT, KeyCodes.KEY_RIGHT, KeyCodes.KEY_UP, KeyCodes.KEY_DOWN, controlstate, 0.5)
-    vec2.add(gamestate.camera.pos, gamestate.camera.pos, cameraMovement);
+
+    vec2.add(gamestate.camera.pos, gamestate.camera.pos, gamestate.camera.velocity);
     
     const fov = gamestate.camera.fieldOfview;
     const cameraDistance = vec2.distance(gamestate.player.pos, gamestate.camera.pos);
@@ -40,7 +62,8 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState) =
   }
 
   const handlePlayerMovement = () => {
-    const movement = getMovementVector(KeyCodes.KEY_A, KeyCodes.KEY_D, KeyCodes.KEY_W, KeyCodes.KEY_S, controlstate, gamestate.player.speed)        
+    const movement = gamestate.player.velocity;
+
     const movementX = vec2.fromValues(movement[0], 0.0);
     const movementY = vec2.fromValues(0.0, movement[1]);
     const newPos1 = vec2.add(vec2.create(), gamestate.player.pos, movementX);
@@ -54,6 +77,7 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState) =
   }
 
   const simulate = () => {
+    handleInputs();
     handleCamera();
     handlePlayerMovement();
     

@@ -22,6 +22,21 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState) =
   const handleCamera = () => {
     const cameraMovement = getMovementVector(KeyCodes.KEY_LEFT, KeyCodes.KEY_RIGHT, KeyCodes.KEY_UP, KeyCodes.KEY_DOWN, controlstate, 0.5)
     vec2.add(gamestate.camera.pos, gamestate.camera.pos, cameraMovement);
+    
+    const fov = gamestate.camera.fieldOfview;
+    const cameraDistance = vec2.distance(gamestate.player.pos, gamestate.camera.pos);
+    if (vec2.distance(gamestate.player.pos, gamestate.camera.pos) > fov*0.1) {
+      vec2.add(
+        gamestate.camera.pos,
+        gamestate.camera.pos,
+        vec2.scale(
+          vec2.create(), 
+          vec2.sub(vec2.create(), gamestate.player.pos, gamestate.camera.pos),
+          (cameraDistance-fov*0.1)/cameraDistance
+        )
+      )
+    }
+
   }
 
   const handlePlayerMovement = () => {
@@ -41,6 +56,7 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState) =
   const simulate = () => {
     handleCamera();
     handlePlayerMovement();
+    
   }
 
   return {

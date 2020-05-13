@@ -21,7 +21,9 @@ export interface Player  {
 }
 
 export interface Camera   {
-  pos: vec2
+  pos: vec2,
+  // number of world units visible on the smaller dimension of camera
+  fieldOfview: number;
 }
 
 export interface Config {
@@ -75,10 +77,21 @@ export const getGameState = () : GameState => {
     }
   }
 
+  for (var i = 0; i < 12; i++) {
+    const angle = i * 2 * Math.PI / 12;
+    items.push(createObject(
+      vec2.fromValues(Math.cos(angle) * 60.0 , Math.sin(angle) * 60.0),
+      circle(10.0,  "#222222")
+    ));
+  }
+
   return  {
     config: {debug: false},
     player: player,
-    camera: {pos: vec2.fromValues(0.0, 0.0)},
+    camera: {
+      pos: vec2.fromValues(0.0, 0.0),
+      fieldOfview: 100.0
+    },
     scene: {
       items: items,
       isInsideObject: (pos: vec2) => items.some(item => item.isInside(pos))

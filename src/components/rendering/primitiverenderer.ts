@@ -2,10 +2,26 @@ import { vec2 } from 'gl-matrix'
 import { GameState } from '../game/gamestate';
 import { Model, Circle, Rect } from '../models/models';
 
-const primitiveRenderer = (canvas: HTMLCanvasElement, gamestate: GameState) => {
+export interface PrimitiveRenderer {
+  getContext(): CanvasRenderingContext2D
+  width(): number
+  height(): number
+  canvasDimensionsWorld(): {pos: vec2, width: number, height: number}
+
+  drawCircle(pos: vec2, radius: number, color: string): void
+  drawModel(pos: vec2, element: Model): void
+  fillPolyRadial(points: ReadonlyArray<vec2>, radialOrigin: vec2, radius: number, color: string): void
+  
+  clearCanvas(): void
+  
+  drawTextCanvas(pos: vec2, text: string): void
+}
+
+
+export const getPrimitiveRenderer = (canvas: HTMLCanvasElement, gamestate: GameState) => {
 
   const camera = gamestate.camera;
-  const sizeScaler = 100.0;
+  const sizeScaler = gamestate.camera.fieldOfview;
   const halfsizeScaler = sizeScaler * 0.5;
 
   const getContext: () => CanvasRenderingContext2D = () => getCanvas().getContext("2d")!;
@@ -18,11 +34,27 @@ const primitiveRenderer = (canvas: HTMLCanvasElement, gamestate: GameState) => {
 
   const minExtent = () => Math.min(width(), height());
 
-  const world2canvas = (pos: vec2) => vec2.fromValues(
-    (pos[0] - camera.pos[0] + halfsizeScaler) * minExtent() * (1.0 / sizeScaler) + (width() - minExtent()) * 0.5, 
-    (pos[1] - camera.pos[1] + halfsizeScaler) * minExtent() * (1.0 / sizeScaler) + (height() - minExtent()) * 0.5);
+  const canvasDimensionsWorld = () => {
+    return {
+      pos: canvas2world(vec2.fromValues(0.0, 0.0)),
+      width: canvas2worldLength(width()),
+      height: canvas2worldLength(height())
+    }
+  }
 
-  const world2canvasLength = (length: number) => length * minExtent() * (1.0 / sizeScaler);
+  const pixelSize = () => minExtent() * (1.0 / sizeScaler);
+
+  const world2canvas = (pos: vec2) => vec2.fromValues(
+    (pos[0] - camera.pos[0] + halfsizeScaler) * pixelSize() + (width() - minExtent()) * 0.5, 
+    (pos[1] - camera.pos[1] + halfsizeScaler) * pixelSize() + (height() - minExtent()) * 0.5);
+
+  const world2canvasLength = (length: number) => length * pixelSize();
+
+  const canvas2worldLength = (pixelCount: number) => pixelCount * (1.0 / pixelSize());
+
+  const canvas2world = (pos: vec2) => vec2.fromValues(
+    (pos[0] - (width() - minExtent())*0.5) / pixelSize() - halfsizeScaler + camera.pos[0],
+    (pos[1] - (height() - minExtent())*0.5) / pixelSize() - halfsizeScaler + camera.pos[1]);
 
   const clearCanvas = () => {
     var ctx = getContext();
@@ -146,6 +178,7 @@ const primitiveRenderer = (canvas: HTMLCanvasElement, gamestate: GameState) => {
     getContext: getContext,
     width: width,
     height: height,
+    canvasDimensionsWorld: canvasDimensionsWorld,
     world2canvas: world2canvas,
     clearCanvas: clearCanvas,
     drawRadialGradient:  drawRadialGradient,
@@ -160,5 +193,3 @@ const primitiveRenderer = (canvas: HTMLCanvasElement, gamestate: GameState) => {
     fillPolyRadial: fillPolyRadial
   };
 }
-
-export default primitiveRenderer;

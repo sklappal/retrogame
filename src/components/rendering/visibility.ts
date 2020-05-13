@@ -1,5 +1,5 @@
 import { vec2 } from 'gl-matrix'
-import { Rect, Model } from '../models/models';
+import { Rect, Model, Circle } from '../models/models';
 import { SceneObject } from '../game/gamestate';
 
 interface Segment {
@@ -8,12 +8,12 @@ interface Segment {
   to: vec2
 }
 
-const playerElementRayRect = (rectpos: vec2, rect: Rect, playerPos: vec2): vec2[] => {
+const playerElementRaysRect = (rectPos: vec2, rect: Rect, playerPos: vec2): vec2[] => {
   const corners: vec2[] = [
-    [rectpos[0] - rect.width * 0.5, rectpos[1] - rect.height * 0.5], 
-    [rectpos[0] + rect.width * 0.5, rectpos[1] - rect.height * 0.5],
-    [rectpos[0] - rect.width * 0.5, rectpos[1] + rect.height * 0.5],
-    [rectpos[0] + rect.width * 0.5, rectpos[1] + rect.height * 0.5]
+    [rectPos[0] - rect.width * 0.5, rectPos[1] - rect.height * 0.5], 
+    [rectPos[0] + rect.width * 0.5, rectPos[1] - rect.height * 0.5],
+    [rectPos[0] - rect.width * 0.5, rectPos[1] + rect.height * 0.5],
+    [rectPos[0] + rect.width * 0.5, rectPos[1] + rect.height * 0.5]
   ];
 
   const rays: vec2[] = corners.map(c => vec2.sub(vec2.create(), c, playerPos));
@@ -37,12 +37,49 @@ const playerElementRayRect = (rectpos: vec2, rect: Rect, playerPos: vec2): vec2[
   return [ray1, ray2];
 }
 
+const playerElementRaysCircle = (circlePos: vec2, circle: Circle, playerPos: vec2): vec2[] => {
+
+  const circlePlayerRay = vec2.sub(vec2.create(), playerPos, circlePos);
+
+  const radius = circle.radius;
+
+  const hypotenuse = vec2.length(circlePlayerRay);
+
+  const circleTangentLength = Math.sqrt(hypotenuse*hypotenuse - radius*radius);
+
+  const sinTheta = circleTangentLength / hypotenuse;
+
+  const cosTheta = radius / hypotenuse;
+
+  const rotated1 = vec2.fromValues(
+    circlePlayerRay[0] * cosTheta - circlePlayerRay[1] * sinTheta,
+    circlePlayerRay[0] * sinTheta + circlePlayerRay[1] * cosTheta
+  )
+  
+  const rotated2 = vec2.fromValues(
+    circlePlayerRay[0] * cosTheta + circlePlayerRay[1] * sinTheta,
+    - circlePlayerRay[0] * sinTheta + circlePlayerRay[1] * cosTheta
+  )
+
+  vec2.scale(rotated1, rotated1, radius / hypotenuse)
+
+  vec2.scale(rotated2, rotated2, radius / hypotenuse)
+
+  const corner1 = vec2.add(vec2.create(), rotated1, circlePos)
+  const corner2 = vec2.add(vec2.create(), rotated2, circlePos)
+
+  return [vec2.sub(vec2.create(), corner1, playerPos), vec2.sub(vec2.create(), corner2, playerPos)];
+}
+
 const findElementSegments = (elementPos: vec2, elementModel: Model, playerPos :vec2) => {
-  if (elementModel.kind !== "rect") {
-    console.log("Non-supported element type")
-    throw new Error("Non-supported element type")
+  if (elementModel.kind === "rect") {
+    return playerElementRaysRect(elementPos, elementModel.shape as Rect, playerPos);
   }
-  return playerElementRayRect(elementPos, elementModel.shape as Rect, playerPos);
+  if (elementModel.kind === "circle") {
+    return playerElementRaysCircle(elementPos, elementModel.shape as Circle, playerPos);
+  }
+
+  throw new Error("Unknown element type");
 }
 
 const toPolar: (vec: vec2) => vec2 = (vec) => {

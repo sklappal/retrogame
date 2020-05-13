@@ -1,6 +1,7 @@
 import { getRenderer } from '../rendering/renderer'
 import { getGameState, ControlState } from './gamestate'
 import { getSimulator } from '../simulator/simulator';
+import { getPrimitiveRenderer } from '../rendering/primitiverenderer';
 
 
 const game = (canvas: HTMLCanvasElement, controlstate: ControlState, requestAnimFrame: any) => {  
@@ -35,17 +36,21 @@ const game = (canvas: HTMLCanvasElement, controlstate: ControlState, requestAnim
     {
       accumulator = 5 * PHYSICS_TIME_STEP;
     }
-    
+
     gamestate.gametime = (curDrawTime - startTime) / 1000.0;
     gamestate.fps = calculateFPS();
    
+
+    const primitiveRenderer = getPrimitiveRenderer(canvas, gamestate);
+
     const simulator = getSimulator(gamestate, controlstate);
+    
     while (accumulator >= PHYSICS_TIME_STEP)
     {
       simulator.simulate();
       accumulator -= PHYSICS_TIME_STEP;
     }
-    const renderer = getRenderer(canvas, gamestate)
+    const renderer = getRenderer(primitiveRenderer, gamestate)
     renderer.draw();
     renderer.drawOverlay()
     

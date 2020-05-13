@@ -1,4 +1,4 @@
-import { isPointBehindLine, isSegmentOccluded, rayLineIntersection } from '../components/rendering/lightvolumes'
+import { isPointBehindLine, isSegmentOccluded, rayLineIntersection } from '../components/rendering/visibility'
 
 it ('rayLineIntersection', () => {
   expect(rayLineIntersection([1.0, 0.0], [5.0, -10.0], [5.0, 10.0])).toStrictEqual({intersect: true, distance: 5.0})

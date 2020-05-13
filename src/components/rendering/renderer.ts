@@ -11,10 +11,10 @@ export const getRenderer = (primitiverenderer: PrimitiveRenderer, gamestate: Gam
     
     
     
-    const lightvolumes2 = findVisibleRegion(gamestate.scene.light, 40.0, gamestate.scene.items);
+    const lightvolumes2 = findVisibleRegion(gamestate.scene.light, 40.0, gamestate.scene.staticObjects);
     primitiverenderer.fillPolyRadial(lightvolumes2, gamestate.scene.light, 40, "#808080")
     
-    const lightvolumes = findVisibleRegion(gamestate.player.pos, 120.0, gamestate.scene.items);
+    const lightvolumes = findVisibleRegion(gamestate.player.pos, 120.0, gamestate.scene.staticObjects);
     primitiverenderer.fillPolyRadial(lightvolumes, gamestate.player.pos, 120, "#808080")
 
     ctx.filter = "none"
@@ -29,7 +29,8 @@ export const getRenderer = (primitiverenderer: PrimitiveRenderer, gamestate: Gam
   }
 
   const drawWorld = () => {
-    gamestate.scene.items.forEach(el => primitiverenderer.drawModel(el.pos, el.model))
+    gamestate.scene.staticObjects.forEach(el => primitiverenderer.drawModel(el.pos, el.model))
+    gamestate.scene.dynamicObjects.forEach(el => primitiverenderer.drawModel(el.pos, el.model))
 
     primitiverenderer.drawCircle(gamestate.scene.light, 0.5, "white")
   }

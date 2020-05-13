@@ -5,14 +5,22 @@ export interface ControlState {
     mouse: {
       pos: vec2,
       posCanvas: vec2,
-      buttons: Set<number>
+      // Actively being pressed
+      buttonsPressed: Set<number>,
+      // Clicked before this frame
+      buttonsClicked: Set<number>
     }
 
     keyboard: {
-      buttons: Set<number>
+      // Actively being pressed
+      buttonsPressed: Set<number>,
+      // Clicked before this frame
+      buttonsClicked: Set<number>
     }
 
     isKeyPressed: (keyCode: number) => boolean
+
+    clearClickedButtons(): void
 }
 
 export interface Player  {
@@ -36,15 +44,20 @@ export interface Config {
   debug: boolean
 }
 
-export interface SceneObject {
+export interface StaticObject {
   model: Model
   pos: vec2
   isInside: (v: vec2) => boolean
 }
 
+export interface DynamicObject extends StaticObject {
+  velocity: vec2
+}
+
 export interface Scene {
   light: vec2,
-  items: ReadonlyArray<SceneObject>
+  staticObjects: ReadonlyArray<StaticObject>
+  dynamicObjects: Array<DynamicObject>
   isInsideObject: (pos: vec2) => boolean
   ambientColor: string
 }
@@ -67,7 +80,7 @@ const player = {
   aimAngle: 0.0
 }
 
-const createObject  = (thisPos: vec2, model: Model) => {
+export const createObject  = (thisPos: vec2, model: Model) => {
   return {
     pos: thisPos,
     model: model,
@@ -75,20 +88,27 @@ const createObject  = (thisPos: vec2, model: Model) => {
   }
 }
 
+export const createDynamicObject  = (thisPos: vec2, velocity: vec2, model: Model) => {
+  return {
+    ...createObject(thisPos, model),
+    velocity: velocity
+  }
+}
+
 export const getGameState = () : GameState => {
-  var items: SceneObject[] = []
+  var items: StaticObject[] = []
   const count = 10
   const width = 3
   const margin = 1
-  for (var i = 0; i < count; i++) {
-    for (var j = 0; j < count; j++) {
+  for (let i = 0; i < count; i++) {
+    for (let j = 0; j < count; j++) {
       items.push(createObject(
         vec2.fromValues((i-count/2) * (width + 2*margin) + margin + width*0.5, (j-count/2) *(width + 2*margin) + margin + width*0.5),
         rect( width, width, "black")));
     }
   }
 
-  for (var i = 0; i < 12; i++) {
+  for (let i = 0; i < 12; i++) {
     const angle = i * 2 * Math.PI / 12;
     items.push(createObject(
       vec2.fromValues(Math.cos(angle) * 60.0 , Math.sin(angle) * 60.0),
@@ -106,7 +126,8 @@ export const getGameState = () : GameState => {
     },
     scene: {
       light: vec2.fromValues(10.0, 10.0),
-      items: items,
+      staticObjects: items,
+      dynamicObjects: [],
       isInsideObject: (pos: vec2) => items.some(item => item.isInside(pos)),
       ambientColor: "#080808"
      },

@@ -1,6 +1,7 @@
-import { GameState, ControlState } from "../game/gamestate";
+import { GameState, ControlState, createDynamicObject } from "../game/gamestate";
 import KeyCodes from '../game/keycodes'
 import { vec2 } from "gl-matrix";
+import { circle } from "../models/models";
 
 export const getSimulator = (gamestate: GameState, controlstate: ControlState) => {
 
@@ -27,9 +28,12 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState) =
   }
 
   const handleInputs = () => {
+    // Camera movement
     const cameraMovement = getMovementVector(KeyCodes.KEY_LEFT, KeyCodes.KEY_RIGHT, KeyCodes.KEY_UP, KeyCodes.KEY_DOWN, controlstate, 0.5);
     gamestate.camera.velocity = cameraMovement;
 
+
+    // Player movement
     const mouseToPlayer = vec2.sub(vec2.create(), controlstate.mouse.pos, gamestate.player.pos)
     gamestate.player.aimAngle = Math.atan2(mouseToPlayer[1], mouseToPlayer[0]);
 
@@ -40,6 +44,14 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState) =
     vec2.add(gamestate.player.velocity, gamestate.player.velocity, playerAcceleration)
     clamp(gamestate.player.velocity, gamestate.player.maxSpeed)
     
+
+    // Player actions
+    if (controlstate.mouse.buttonsClicked.has(0)) {
+      const aimAngle = gamestate.player.aimAngle;
+      const dir = vec2.scale(vec2.create(), vec2.fromValues(Math.cos(aimAngle), Math.sin(aimAngle)), 0.9)
+      gamestate.scene.dynamicObjects.push(createDynamicObject(gamestate.player.pos,  dir, circle(0.2, "blue"),))
+    }
+
   }
 
   const handleCamera = () => {
@@ -77,10 +89,17 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState) =
     }
   }
 
+  const handleDynamicObjects = () => {
+    gamestate.scene.dynamicObjects.forEach(ob => {
+      vec2.add(ob.pos, ob.pos, ob.velocity)
+    })
+  }
+
   const simulate = () => {
     handleInputs();
     handleCamera();
     handlePlayerMovement();
+    handleDynamicObjects();
     
   }
 

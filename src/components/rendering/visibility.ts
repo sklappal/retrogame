@@ -1,6 +1,6 @@
 import { vec2 } from 'gl-matrix'
 import { Rect, Model, Circle } from '../models/models';
-import { SceneObject } from '../game/gamestate';
+import { StaticObject } from '../game/gamestate';
 
 interface Segment {
   id: number
@@ -97,15 +97,6 @@ const angleFromT1toT2 = (t1: vec2, t2: vec2) => {
     return diff + Math.PI * 2.0
 
   return diff
-}
-
-const getCevianLength = (bv: vec2, cv: vec2, angle_bc: number, cevian_angle: number) => {
-  const b = bv[0];
-  const c = cv[0];
-  const a = Math.sqrt(b*b + c*c - 2 * b * c * Math.cos(angle_bc))  
-  const angle_ab = Math.acos((a*a + b*b - c*c) / (2 * a * b))
-  const angle_n_cevian = Math.PI - cevian_angle - angle_ab;
-  return b * Math.sin(angle_ab) / Math.sin(angle_n_cevian);
 }
 
 export const rayLineIntersection = (ray: vec2, point1: vec2, point2: vec2): intersection => {
@@ -252,7 +243,7 @@ const intersectionsAlongRay = (angle: number, segments: ReadonlyArray<Segment>) 
     .sort((a, b) => a.distance - b.distance)
 }
 
-export const findVisibleRegion = (pos: vec2, radius:number, items: ReadonlyArray<SceneObject>) => {
+export const findVisibleRegion = (pos: vec2, radius:number, items: ReadonlyArray<StaticObject>) => {
   const playerPos = pos;
   const elementSegments = items.map(element => findElementSegments(element.pos, element.model, playerPos));
 

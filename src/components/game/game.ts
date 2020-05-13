@@ -50,11 +50,15 @@ const game = (canvas: HTMLCanvasElement, controlstate: ControlState, requestAnim
     while (accumulator >= PHYSICS_TIME_STEP)
     {
       simulator.simulate();
+      controlstate.clearClickedButtons();
       accumulator -= PHYSICS_TIME_STEP;
     }
+
+    // assumption that these guys below don't used clicked states as they are cleared above. Let's see.
     const renderer = getRenderer(primitiveRenderer, gamestate)
     renderer.draw();
     renderer.drawOverlay()
+
     
     requestAnimFrame(tick);
   }

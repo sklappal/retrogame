@@ -4,6 +4,8 @@ import requestAnimFrame from '../utils/utils'
 import { vec2 } from 'gl-matrix'
 import { ControlState } from './game/gamestate';
 
+
+
 class Game extends React.Component {
   controlstate: ControlState;
   canvasRef: React.RefObject<HTMLCanvasElement>;
@@ -12,25 +14,38 @@ class Game extends React.Component {
     super(props)
     this.canvasRef = React.createRef()
 
+    const mouseButtonsPressed = new Set<number>();
+    const mouseButtonsClicked = new Set<number>();
+
+    const keyboardButtonsPressed = new Set<number>();
+    const keyboardButtonsClicked = new Set<number>();
+
     this.controlstate = {
       mouse: {
         pos: vec2.fromValues(0.0, 0.0),
         posCanvas: vec2.fromValues(0.0, 0.0),
-        buttons: new Set()
+        buttonsPressed: mouseButtonsPressed,
+        buttonsClicked: mouseButtonsClicked
       },
       keyboard: {
-        buttons: new Set()
+        buttonsPressed: keyboardButtonsPressed,
+        buttonsClicked: keyboardButtonsClicked
       },
-      isKeyPressed: keyCode => this.controlstate.keyboard.buttons.has(keyCode)
+      isKeyPressed: keyCode => this.controlstate.keyboard.buttonsPressed.has(keyCode),
+      clearClickedButtons: () => {
+        mouseButtonsClicked.clear()
+        keyboardButtonsClicked.clear()
+      }
     }
   }
 
   OnMouseDownCB(evt: { button: number; }) {
-    this.controlstate.mouse.buttons.add(evt.button)
+    this.controlstate.mouse.buttonsPressed.add(evt.button)
   }
 
   OnMouseUpCB(evt: { button: number; }) {
-    this.controlstate.mouse.buttons.delete(evt.button)
+    this.controlstate.mouse.buttonsPressed.delete(evt.button)
+    this.controlstate.mouse.buttonsClicked.add(evt.button)
   }
 
   ScreenToCanvas(sx: number, sy: number) {
@@ -45,11 +60,12 @@ class Game extends React.Component {
   }
 
   OnKeyDownCB(evt: { keyCode: number; }) {
-    this.controlstate.keyboard.buttons.add(evt.keyCode)
+    this.controlstate.keyboard.buttonsPressed.add(evt.keyCode)
   }
 
   OnKeyUpCB(evt: { keyCode: number; }) {
-    this.controlstate.keyboard.buttons.delete(evt.keyCode)
+    this.controlstate.keyboard.buttonsPressed.delete(evt.keyCode)
+    this.controlstate.keyboard.buttonsClicked.add(evt.keyCode)
   }
 
   render() {

@@ -1,17 +1,26 @@
 import { vec2 } from 'gl-matrix'
+import { Rect, Model } from '../models/models';
+import { SceneObject } from '../game/gamestate';
 
-const playerElementRayRect = (rectpos, rect, playerPos) => {
-  const corners = [
+interface Segment {
+  id: number
+  from: vec2,
+  to: vec2
+}
+
+const playerElementRayRect = (rectpos: vec2, rect: Rect, playerPos: vec2):vec2[] => {
+  const corners: vec2[] = [
     [rectpos[0], rectpos[1]], 
     [rectpos[0] + rect.width, rectpos[1]],
     [rectpos[0], rectpos[1] + rect.height],
     [rectpos[0] + rect.width, rectpos[1] + rect.height]
   ];
 
-  const rays = corners.map(c => vec2.sub(vec2.create(), c, playerPos));
+  const rays: vec2[] = corners.map(c => vec2.sub(vec2.create(), c, playerPos));
 
   let maxAngle = 0.0;
-  let ray1, ray2;
+  let ray1: vec2 = [0.0, 0.0];
+  let ray2: vec2 = [0.0, 0.0];
   for (let i = 0; i < rays.length-1; i++) {
     for (let j = 1; j < rays.length; j++) {
       if (i !== j) {
@@ -28,22 +37,24 @@ const playerElementRayRect = (rectpos, rect, playerPos) => {
   return [ray1, ray2];
 }
 
-const findElementSegments = (elementPos, elementModel, playerPos) => {
-  if (elementModel.type !== "rect") {
+const findElementSegments = (elementPos: vec2, elementModel: Model, playerPos :vec2) => {
+  if (elementModel.kind !== "rect") {
     console.log("Non-supported element type")
+    throw "Non-supported element type"
   }
-  return playerElementRayRect(elementPos, elementModel, playerPos);
+  return playerElementRayRect(elementPos, elementModel.shape as Rect, playerPos);
 }
 
-const toPolar = (vec) => {
-  return [vec2.length(vec), Math.atan2(vec[1], vec[0])]
+const toPolar: (vec: vec2) => vec2 = (vec) => {
+  
+  return [vec2.length(vec) as number, Math.atan2(vec[1], vec[0])]
 }
 
-const toCartesian = (vec) => {
+const toCartesian = (vec: vec2) => {
   return vec2.fromValues(vec[0] * Math.cos(vec[1]), vec[0] * Math.sin(vec[1]))
 }
 
-const angleFromT1toT2 = (t1, t2) => {
+const angleFromT1toT2 = (t1: vec2, t2: vec2) => {
   const diff = t2[1]-t1[1];
   if (diff < 0)
     return diff + Math.PI * 2.0
@@ -51,7 +62,7 @@ const angleFromT1toT2 = (t1, t2) => {
   return diff
 }
 
-const getCevianLength = (bv, cv, angle_bc, cevian_angle) => {
+const getCevianLength = (bv: vec2, cv: vec2, angle_bc: number, cevian_angle: number) => {
   const b = bv[0];
   const c = cv[0];
   const a = Math.sqrt(b*b + c*c - 2 * b * c * Math.cos(angle_bc))  
@@ -60,7 +71,7 @@ const getCevianLength = (bv, cv, angle_bc, cevian_angle) => {
   return b * Math.sin(angle_ab) / Math.sin(angle_n_cevian);
 }
 
-export const rayLineIntersection = (ray, point1, point2) => {
+export const rayLineIntersection = (ray: vec2, point1: vec2, point2: vec2): intersection => {
     const v1 = vec2.scale(vec2.create(), point1, -1.0)
     const v2 = vec2.sub(vec2.create(), point2, point1)
     const v3 = vec2.fromValues(-ray[1], ray[0])
@@ -78,49 +89,51 @@ export const rayLineIntersection = (ray, point1, point2) => {
     return {intersect: false}
 }
 
-export const raySegmentIntersection = (rayAngle, segment) => {
+type intersection = { intersect: false} | {intersect: true, distance: number}
+
+export const raySegmentIntersection = (rayAngle: number, segment: Segment): intersection  => {
     const ray = toCartesian([1.0, rayAngle])
     
-    const point1 = toCartesian(segment[0])
-    const point2 = toCartesian(segment[1])
+    const point1 = toCartesian(segment.from)
+    const point2 = toCartesian(segment.to)
     
     return rayLineIntersection(ray, point1, point2);
 }
 
-const findNearestIntersectingSegment = (rayAngle, segments) => {
-  let min = 10000; // very large number, almost infinite
+const findNearestIntersectingSegment = (rayAngle: number, segments: Iterable<Segment>) => {
+  let min: number = 10000; // very large number, almost infinite
   let minSegment = null;
-  segments.forEach(segment => {
-    const i = raySegmentIntersection(rayAngle, segment.segment);
+  for (const segment of segments) {
+    const i = raySegmentIntersection(rayAngle, segment);
     if (i.intersect && i.distance < min) {
       min = i.distance;
       minSegment = segment;
     }
-  })
+  }
 
   return {segment: minSegment, distance: min};
 }
 
-export const isPointBehindLine = (p1, p2, p) => {
+export const isPointBehindLine = (p1: vec2, p2: vec2, p: vec2) => {
   //d=(x−x1)(y2−y1)−(y−y1)(x2−x1)
   return ((p[0]-p1[0])*(p2[1]-p1[1]) - (p[1]-p1[1])*(p2[0]-p1[0])) > 0.0
 }
 
-const isPointBehindSegment = (segment, polar) => {
-  const p1 = toCartesian(segment[0])
-  const p2 = toCartesian(segment[1])
+const isPointBehindSegment = (segment: Segment, polar: vec2) => {
+  const p1 = toCartesian(segment.from)
+  const p2 = toCartesian(segment.to)
 
   return isPointBehindLine(p1, p2, toCartesian(polar));
 }
 
-const isSegmentBehindOther = (thisSegment, otherSegment) => {
-  const p1 = toCartesian(otherSegment[0])
-  const p2 = toCartesian(otherSegment[1])
+const isSegmentBehindOther = (thisSegment: Segment, otherSegment: Segment) => {
+  const p1 = toCartesian(otherSegment.from)
+  const p2 = toCartesian(otherSegment.to)
 
-  return isPointBehindLine(p1, p2, toCartesian(thisSegment[0])) && isPointBehindLine(p1, p2, toCartesian(thisSegment[1]));
+  return isPointBehindLine(p1, p2, toCartesian(thisSegment.from)) && isPointBehindLine(p1, p2, toCartesian(thisSegment.to));
 }
 
-const normalizeTo2pi = angle => {
+const normalizeTo2pi = (angle: number) => {
   if (angle < 0.0)
     return angle + 2.0 * Math.PI
   if (angle >= 2.0 * Math.PI)
@@ -129,12 +142,12 @@ const normalizeTo2pi = angle => {
 }
 
 // is this hidden by other
-export const isSegmentOccluded = (thisSegment, otherSegment) => {
+export const isSegmentOccluded = (thisSegment: Segment, otherSegment: Segment) => {
   const startAngle = 0.0;
-  const stopAngle = angleFromT1toT2(otherSegment[0], otherSegment[1])
+  const stopAngle = angleFromT1toT2(otherSegment.from, otherSegment.to)
   
-  const thisStart = normalizeTo2pi(thisSegment[0][1] - otherSegment[0][1])
-  let thisStop =  normalizeTo2pi(thisSegment[1][1] - otherSegment[0][1])
+  const thisStart = normalizeTo2pi(thisSegment.from[1] - otherSegment.from[1])
+  let thisStop =  normalizeTo2pi(thisSegment.to[1] - otherSegment.from[1])
   if (thisStop < thisStart) {
     thisStop += 2.0 * Math.PI
   }
@@ -146,7 +159,7 @@ export const isSegmentOccluded = (thisSegment, otherSegment) => {
   return isSegmentBehindOther(thisSegment, otherSegment);
 }
 
-const purgeOccludedSegments = (segments) => {
+const purgeOccludedSegments = (segments : ReadonlyArray<Segment>) => {
   const ret = [];
   for (var i = 0; i < segments.length; i++) {
     let hidden = false;
@@ -172,28 +185,29 @@ const purgeOccludedSegments = (segments) => {
 
 }
 
-const sp = (segment) => {
-  return {startingPoint: true, point: segment.segment[0], segment: segment}
+const sp = (segment: Segment) => {
+  return {startingPoint: true, point: segment.from, segment: segment}
 }
 
-const ep = (segment) => {
-  return {startingPoint: false, point: segment.segment[1], segment: segment}
+const ep = (segment: Segment) => {
+  return {startingPoint: false, point: segment.to, segment: segment}
 }
 
-const epsilonEqual = (v1, v2) => {
+const epsilonEqual = (v1: vec2, v2: vec2) => {
   return Math.abs(v1[0]-v2[0]) < 1e-6 && Math.abs(v1[1]-v2[1]) < 1e-6;
 }
 
-const intersectionsAlongRay = (angle, segments) => {
+const intersectionsAlongRay = (angle: number, segments: ReadonlyArray<Segment>) => {
   return segments
-    .map(segment => {return {...raySegmentIntersection(angle, segment.segment), segment: segment}})
+    .map(segment => {return {...raySegmentIntersection(angle, segment), segment: segment}})
     .filter(intersect => intersect.intersect)
+    .map(intersect => intersect as {intersect: true, distance: number, segment: Segment})
     .sort((a, b) => a.distance - b.distance)
 }
 
-export const findLightVolumes = gamestate => {
-  const playerPos = gamestate.player.pos;
-  const elementSegments =  gamestate.scene.items.map(element => findElementSegments(element.pos, element.model, playerPos));
+export const findVisibleRegion = (pos: vec2, items: ReadonlyArray<SceneObject>) => {
+  const playerPos = pos;
+  const elementSegments =  items.map(element => findElementSegments(element.pos, element.model, playerPos));
 
   const wallDistance = 250.0;
 
@@ -202,7 +216,7 @@ export const findLightVolumes = gamestate => {
   elementSegments.push([[wallDistance, wallDistance], [-wallDistance, wallDistance]])
   elementSegments.push([[-wallDistance, wallDistance], [-wallDistance, -wallDistance]])
 
-  const segmentsNonPurged = elementSegments.map(rayPair => {
+  const segmentsNonPurged = elementSegments.map((rayPair, i) => {
     const r0 = toPolar(rayPair[0])
     const r1 = toPolar(rayPair[1])
     // sort so that coordinates in a pair are ascending wrt theta
@@ -211,24 +225,20 @@ export const findLightVolumes = gamestate => {
     const angle2 = angleFromT1toT2(r1, r0)
 
     if (angle2 < angle1) {
-      return [r1, r0]
+      return {from: r1, to: r0, id: i}
     }
-    return [r0, r1]
+    return {from: r0, to: r1, id: i}
   })
 
   const segmentsPurged = purgeOccludedSegments(segmentsNonPurged);
 
   const farAwayDistance = wallDistance + 10.0
 
-  const segmentsFiltered = segmentsPurged.filter(segment => {
-    const angle = angleFromT1toT2(segment[0], segment[1]);
-    const d = getCevianLength(segment[0], segment[1], angle, angle*0.5);
+  const segments = segmentsPurged.filter(segment => {
+    const angle = angleFromT1toT2(segment.from, segment.to);
+    const d = getCevianLength(segment.from, segment.to, angle, angle*0.5);
 
     return d < farAwayDistance;
-  });
-
-  const segments = segmentsFiltered.map((segment, i) => {
-    return {segment: segment, id: i}
   });
 
   const allPoints = segments
@@ -242,7 +252,7 @@ export const findLightVolumes = gamestate => {
     if (currentPoint.startingPoint) {
       let hidden = false;
       segments.forEach(segment => {
-        if (isPointBehindSegment(segment.segment, currentPoint.point)) {
+        if (isPointBehindSegment(segment, currentPoint.point)) {
           hidden = true;
         }
       })
@@ -254,14 +264,14 @@ export const findLightVolumes = gamestate => {
   }
 
 
-  const points = []
+  const points: vec2[] = []
   const startPoint = allPoints[startIndex];
    // visible and a starting point. Yes.
   let currentSegment = startPoint.segment;
 
   const intersections = intersectionsAlongRay(startPoint.point[1], segments)
 
-  const open = new Set();
+  const open = new Set<Segment>();
   intersections.forEach(isec => {
     open.add(isec.segment)
   });
@@ -278,10 +288,10 @@ export const findLightVolumes = gamestate => {
     }
 
     segments.forEach(segment => {
-      if (epsilonEqual(segment.segment[0], currentPoint.point)) {
+      if (epsilonEqual(segment.from, currentPoint.point)) {
         open.add(segment);
       }
-      if (epsilonEqual(segment.segment[1], currentPoint.point)) {
+      if (epsilonEqual(segment.to, currentPoint.point)) {
         open.delete(segment);
       }
     })
@@ -289,11 +299,12 @@ export const findLightVolumes = gamestate => {
     const nearestSegment = findNearestIntersectingSegment(currentPoint.point[1], open);
     if (nearestSegment.segment === null) {
       console.log("no intersection really sad")
+      continue;
     }
       
     if (nearestSegment.segment !== currentSegment) {
       points.push(triangleStart);
-      const d1 = raySegmentIntersection(currentPoint.point[1], currentSegment.segment)
+      const d1 = raySegmentIntersection(currentPoint.point[1], currentSegment)
       if (d1.intersect) {
         points.push([d1.distance, currentPoint.point[1]])
       } else {

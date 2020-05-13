@@ -1,12 +1,14 @@
 import { vec2 } from 'gl-matrix'
-import { gamestate } from '../game/gamestate';
+import { GameState } from '../game/gamestate';
+import { Model, Circle, Rect } from '../models/models';
 
-const primitiveRenderer = (canvas, camera) => {
+const primitiveRenderer = (canvas: HTMLCanvasElement, gamestate: GameState) => {
 
+  const camera = gamestate.camera;
   const sizeScaler = 100.0;
   const halfsizeScaler = sizeScaler * 0.5;
 
-  const getContext = () => getCanvas().getContext("2d");
+  const getContext: () => CanvasRenderingContext2D = () => getCanvas().getContext("2d")!;
 
   const getCanvas = () => canvas;
   
@@ -16,11 +18,11 @@ const primitiveRenderer = (canvas, camera) => {
 
   const minExtent = () => Math.min(width(), height());
 
-  const world2canvas = pos => vec2.fromValues(
-    (pos[0] - camera[0] + halfsizeScaler) * minExtent() * (1.0 / sizeScaler) + (width() - minExtent()) * 0.5, 
-    (pos[1] - camera[1] + halfsizeScaler) * minExtent() * (1.0 / sizeScaler) + (height() - minExtent()) * 0.5);
+  const world2canvas = (pos: vec2) => vec2.fromValues(
+    (pos[0] - camera.pos[0] + halfsizeScaler) * minExtent() * (1.0 / sizeScaler) + (width() - minExtent()) * 0.5, 
+    (pos[1] - camera.pos[1] + halfsizeScaler) * minExtent() * (1.0 / sizeScaler) + (height() - minExtent()) * 0.5);
 
-  const world2canvasLength = length => length * minExtent() * (1.0 / sizeScaler);
+  const world2canvasLength = (length: number) => length * minExtent() * (1.0 / sizeScaler);
 
   const clearCanvas = () => {
     var ctx = getContext();
@@ -28,7 +30,7 @@ const primitiveRenderer = (canvas, camera) => {
     ctx.fillRect(0, 0, width(), height());
   }
 
-  const drawRadialGradient = (pos, radius, color) => {
+  const drawRadialGradient = (pos: vec2, radius: number, color: string) => {
     var ctx = getContext();
     var posCanvas = world2canvas(pos);
     var radiusCanvas = world2canvasLength(radius);
@@ -39,7 +41,7 @@ const primitiveRenderer = (canvas, camera) => {
     ctx.fillRect(0, 0, width(), height());
   }
 
-  const drawCircle = (pos, radius, color = "black") => {
+  const drawCircle = (pos: vec2, radius: number, color = "black") => {
     const posCanvas = world2canvas(pos);
     var radiuscanvas = world2canvasLength(radius);
     var ctx = getContext();
@@ -49,16 +51,16 @@ const primitiveRenderer = (canvas, camera) => {
     ctx.fill();
   }
 
-  const drawRect = (pos, w, h, color = "black") => {
+  const drawRect = (pos: vec2, w: number, h: number, color = "black") => {
     const posCanvas = world2canvas(pos);
     var ctx = getContext();
     ctx.fillStyle = color;
     ctx.fillRect(posCanvas[0], posCanvas[1], world2canvasLength(w), world2canvasLength(h));
   }
   
-  const drawSquare = (pos, w, color = "black") => drawRect(pos, w, w, color)
+  const drawSquare = (pos: vec2, w: number, color = "black") => drawRect(pos, w, w, color)
 
-  const drawLine = (from, to, color = "black") => {
+  const drawLine = (from: vec2, to: vec2, color = "black") => {
     const fromCanvas = world2canvas(from)
     const toCanvas = world2canvas(to)
     var ctx = getContext();
@@ -70,25 +72,25 @@ const primitiveRenderer = (canvas, camera) => {
     ctx.stroke(); 
   }
 
-  const drawModel = (pos, element) => {
-    if (element.type === "circle") {
-      drawCircle([pos[0] + element.pos[0], pos[1] + element.pos[1]], element.radius, element.color)
-    } else if (element.type === "line") {
-      drawLine([pos[0] + element.from[0], pos[1] + element.from[1]], [pos[0] + element.to[0], pos[1] + element.to[1]], element.color)
-    } else if (element.type === "rect") {
-      drawRect(pos, element.width, element.height, element.color)
+  const drawModel = (pos: vec2, element: Model) => {
+    if (element.kind === "circle") {
+      const shape = element.shape as Circle;
+      drawCircle(pos, shape.radius, element.color)
+    } else if (element.kind === "rect") {
+      const shape = element.shape as Rect;
+      drawRect(pos, shape.width, shape.height, element.color)
     } else {
       console.log("unknown model shape")
     }
   }
 
-  const drawCompositeModel = (pos, compositeModel) => {    
-    compositeModel.items.forEach(element => {
+  const drawCompositeModel = (pos: vec2, items: Iterable<Model>) => {    
+    for (const element of items) {
       drawModel(pos, element)
-    });
+    }
   }
 
-  const fillPoly = (points, color = '#000000EE') => {
+  const fillPoly = (points: ReadonlyArray<vec2>, color = '#000000EE') => {
     var ctx = getContext();
     ctx.fillStyle = color;
     ctx.beginPath();
@@ -103,7 +105,7 @@ const primitiveRenderer = (canvas, camera) => {
     ctx.fill();
   }
 
-  const fillPolyRadial = (points, radialOrigin, radius, color = '#000000EE') => {
+  const fillPolyRadial = (points: ReadonlyArray<vec2>, radialOrigin: vec2, radius: number, color = '#000000EE') => {
     
     var ctx = getContext();
     var posCanvas = world2canvas(radialOrigin);
@@ -126,14 +128,14 @@ const primitiveRenderer = (canvas, camera) => {
     }
     ctx.closePath();
     ctx.fill();
-    if (gamestate.debug)
+    if (gamestate.config.debug)
       ctx.stroke();
 
-    if (gamestate.debug)
-      canvasPoints.forEach((p, i) => drawTextCanvas(p, i+1))
+    if (gamestate.config.debug)
+      canvasPoints.forEach((p, i) => drawTextCanvas(p, (i+1).toString()))
   }
 
-  const drawTextCanvas = (pos, text) => {
+  const drawTextCanvas = (pos: vec2, text: string) => {
     const ctx = getContext();
     ctx.fillStyle = "white";
     ctx.fillText(text, pos[0], pos[1]);

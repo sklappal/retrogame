@@ -1,25 +1,25 @@
 import renderer from '../rendering/renderer'
-import { gamestate } from './gamestate'
+import { gamestate, ControlState } from './gamestate'
 import { vec2 } from 'gl-matrix'
 import KeyCodes from './keycodes'
 
 
-const getMovemement = (key1, key2, controlstate) => {
+const getMovemement = (key1: number, key2: number, controlstate: ControlState) => {
   if (controlstate.isKeyPressed(key1) || controlstate.isKeyPressed(key2)) {
     return controlstate.isKeyPressed(key1) ? -1 : 1;
   }
   return 0;
 }
 
-const getNormalizedMovement = (xkey1, xkey2, ykey1, ykey2, controlstate) => {
+const getNormalizedMovement = (xkey1: number, xkey2: number, ykey1: number, ykey2: number, controlstate: ControlState) => {
   const nonNormalized = vec2.fromValues(getMovemement(xkey1, xkey2, controlstate), getMovemement(ykey1, ykey2, controlstate));
   if (nonNormalized[0] === 0 && nonNormalized[1] === 0)
     return nonNormalized;
 
-  return vec2.normalize([], nonNormalized)
+  return vec2.normalize(vec2.create(), nonNormalized)
 }
 
-const game = (canvas, controlstate, requestAnimFrame) => {  
+const game = (canvas: HTMLCanvasElement, controlstate: ControlState, requestAnimFrame: any) => {  
   
   const PHYSICS_TIME_STEP = 10; // 100 fps
   var accumulator = 0;
@@ -55,7 +55,7 @@ const game = (canvas, controlstate, requestAnimFrame) => {
     const movement = getNormalizedMovement(KeyCodes.KEY_A, KeyCodes.KEY_D, KeyCodes.KEY_W, KeyCodes.KEY_S, controlstate)
     while (accumulator >= PHYSICS_TIME_STEP)
     {
-      vec2.scaleAndAdd(gs.camera, gs.camera, cameraMovement, 0.5);
+      vec2.scaleAndAdd(gs.camera.pos, gs.camera.pos, cameraMovement, 0.5);
       vec2.scaleAndAdd(gs.player.pos, gs.player.pos, movement, gs.player.speed);
       
       accumulator -= PHYSICS_TIME_STEP;

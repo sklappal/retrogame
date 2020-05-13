@@ -2,9 +2,10 @@ import React from 'react';
 import game from './game/game'
 import requestAnimFrame from '../utils/utils'
 import { vec2 } from 'gl-matrix'
+import { ControlState } from './game/gamestate';
 
 class Game extends React.Component {
-  controlstate: { mouse: { pos: vec2; buttons: Set<number>; }; keyboard: { buttons: Set<number>; }; isKeyPressed: (keyCode: any) => any; };
+  controlstate: ControlState;
   canvasRef: React.RefObject<HTMLCanvasElement>;
 
   constructor(props: Readonly<{}>) {

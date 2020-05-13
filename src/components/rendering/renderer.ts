@@ -1,24 +1,21 @@
 import primitiveRenderer from './primitiverenderer'
-import { findLightVolumes } from './lightvolumes'
+import { findVisibleRegion } from './visibility'
+import { GameState } from '../game/gamestate';
 
-const renderer = (canvas, gamestate) => {
-  const pr = primitiveRenderer(canvas, gamestate.camera);
+const renderer = (canvas : HTMLCanvasElement, gamestate: GameState) => {
+  const pr = primitiveRenderer(canvas, gamestate);
 
   const drawLighting = () => {
-    const lightvolumes = findLightVolumes(gamestate);
+    const lightvolumes = findVisibleRegion(gamestate.player.pos, gamestate.scene.items);
     const ctx = pr.getContext()
     ctx.filter = "blur(2px)"
     pr.fillPolyRadial(lightvolumes, gamestate.player.pos, 120, "#AAAAAA")
     ctx.filter = "none"
-    
-  //  lightvolumes.forEach(el => pr.drawLine(gamestate.player.pos, el, "white"))
-
   }
 
   const drawPlayer = () => {
     const pos = gamestate.player.pos
     pr.drawCircle(pos, 1.0, "red")
-    //pr.drawCompositeModel(pos, gamestate.player.compositeModel);
   }
 
   const drawWorld = () => {

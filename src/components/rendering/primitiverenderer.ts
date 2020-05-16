@@ -13,13 +13,13 @@ export interface PrimitiveRenderer {
   drawLine(from: vec2, to: vec2, color: string): void
   drawCircle(pos: vec2, radius: number, color: string): void
   drawModel(pos: vec2, element: Model): void
+  fillPoly(points: ReadonlyArray<vec2>, color: string): void
   fillPolyRadial(points: ReadonlyArray<vec2>, radialOrigin: vec2, radius: number, color: string): void  
   
   drawTextCanvas(pos: vec2, text: string): void
 }
 
-
-export const getPrimitiveRenderer = (canvasHelper: CanvasHelper, config: Config) => {
+export const getPrimitiveRenderer = (canvasHelper: CanvasHelper) => {
 
   const getContext: () => CanvasRenderingContext2D = canvasHelper.getContext;
 
@@ -109,7 +109,6 @@ export const getPrimitiveRenderer = (canvasHelper: CanvasHelper, config: Config)
     grd.addColorStop(0.5, '#00000000');
     
     ctx.fillStyle = grd;
-    ctx.strokeStyle = "white"
     ctx.beginPath();
 
     const canvasPoints = points.map(p => canvasHelper.world2canvas(p));
@@ -122,11 +121,6 @@ export const getPrimitiveRenderer = (canvasHelper: CanvasHelper, config: Config)
     }
     ctx.closePath();
     ctx.fill();
-    if (config.debug)
-      ctx.stroke();
-
-    if (config.debug)
-      canvasPoints.forEach((p, i) => drawTextCanvas(p, (i+1).toString()))
   }
 
   const drawTextCanvas = (pos: vec2, text: string) => {
@@ -144,6 +138,7 @@ export const getPrimitiveRenderer = (canvasHelper: CanvasHelper, config: Config)
     drawLine: drawLine,
     drawModel: drawModel,
     fillPolyRadial: fillPolyRadial,
+    fillPoly: fillPoly,
     drawTextCanvas: drawTextCanvas,
   };
 }

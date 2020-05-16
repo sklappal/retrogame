@@ -1,5 +1,5 @@
 import React from 'react';
-import { game } from './game/game'
+import { startGame } from './game/game'
 import requestAnimFrame from '../utils/utils'
 import { vec2 } from 'gl-matrix'
 import { ControlState, getGameState } from './game/gamestate';
@@ -7,6 +7,7 @@ import { getPrimitiveRenderer } from './rendering/primitiverenderer';
 import { getCanvasHelper, CanvasHelper } from './rendering/canvashelper';
 
 import '../styles/Game.css'
+import { getGpuRenderer } from './rendering/gpurenderer';
 
 class Game extends React.Component {
   controlstate: ControlState;
@@ -81,8 +82,8 @@ class Game extends React.Component {
     return (
       <div className="main_container">
         <div className="canvas_container">
-          <canvas ref={this.mainCanvasRef} />
           <canvas ref={this.gpuCanvasRef} />
+          <canvas ref={this.mainCanvasRef} />
           <canvas ref={this.overlayCanvasRef} />
         </div>
       </div>
@@ -104,7 +105,7 @@ class Game extends React.Component {
 
     const gamestate = getGameState();
     const mainCanvasHelper = getCanvasHelper(this.mainCanvasRef.current!, gamestate.camera);
-    const mainRenderer = getPrimitiveRenderer(mainCanvasHelper, gamestate.config);
+    const mainRenderer = getPrimitiveRenderer(mainCanvasHelper);
 
     const overlayCanvas = this.overlayCanvasRef.current!;
     const overlayCanvasHelper =  getCanvasHelper(overlayCanvas, gamestate.camera);
@@ -116,12 +117,18 @@ class Game extends React.Component {
     window.onkeydown = (e: any) => this.OnKeyDownCB(e);
     window.onkeyup = (e: any) => this.OnKeyUpCB(e);
 
-    const overlayRenderer = getPrimitiveRenderer(overlayCanvasHelper, gamestate.config);
+    const overlayRenderer = getPrimitiveRenderer(overlayCanvasHelper);
 
     window.onresize = this.resize;
     this.resize();
+
+    const gpuRenderer = getGpuRenderer(getCanvasHelper(this.gpuCanvasRef.current!, gamestate.camera), gamestate);
   
-    game(mainRenderer, overlayRenderer, gamestate, this.controlstate, requestAnimFrame());
+    if (gpuRenderer === null) {
+      return;
+    }
+
+    startGame(mainRenderer, gpuRenderer, overlayRenderer, gamestate, this.controlstate, requestAnimFrame());
   }
 }
 

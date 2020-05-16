@@ -2,9 +2,10 @@ import { getRenderingHandler, getOverlayRenderingHandler } from '../rendering/re
 import { ControlState, GameState } from './gamestate'
 import { getSimulator } from '../simulator/simulator';
 import { PrimitiveRenderer } from '../rendering/primitiverenderer';
+import { GpuRenderer } from '../rendering/gpurenderer';
 
 
-export const game = (mainRenderer: PrimitiveRenderer, overlayRenderer: PrimitiveRenderer, gamestate: GameState, controlstate: ControlState, requestAnimFrame: any) => {  
+export const startGame = (mainRenderer: PrimitiveRenderer, gpuRenderer: GpuRenderer, overlayRenderer: PrimitiveRenderer, gamestate: GameState, controlstate: ControlState, requestAnimFrame: any) => {  
   
   const PHYSICS_TIME_STEP = 10; // 100 fps for physics simulation
   var physicsAccumulator = 0;
@@ -50,6 +51,8 @@ export const game = (mainRenderer: PrimitiveRenderer, overlayRenderer: Primitive
     // assumption that these guys below don't used clicked states as they are cleared in clearClickedButtons. Let's see.
     const renderingHandler = getRenderingHandler(mainRenderer, gamestate)
     renderingHandler.draw();
+
+    gpuRenderer.draw();
 
     const overlayHandler = getOverlayRenderingHandler(overlayRenderer, gamestate);
     overlayHandler.drawOverlay();

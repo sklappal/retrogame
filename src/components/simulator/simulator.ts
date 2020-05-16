@@ -5,7 +5,7 @@ import { circle } from "../models/models";
 
 export const getSimulator = (gamestate: GameState, controlstate: ControlState) => {
 
-  const FRICTION_COEFFICIENT = 0.92;
+  const FRICTION_COEFFICIENT = 0.8
   const CAMERA_MAX_DISTANCE_FROM_PLAYER_RELATIVE_TO_FOV = 0.3;
 
   const getMovemement = (key1: number, key2: number, controlstate: ControlState) => {

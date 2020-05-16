@@ -52,7 +52,7 @@ export const getCanvasHelper = (canvas: HTMLCanvasElement, camera: Camera) => {
     width: width,
     height: height,
     world2canvas: world2canvas,
-      world2canvasLength: world2canvasLength,
+    world2canvasLength: world2canvasLength,
     canvas2world: canvas2world
   }
 }

@@ -258,7 +258,7 @@ export const findVisibleRegion = (pos: vec2, radius:number, items: ReadonlyArray
       return acc;
   }, 0.0) ;
 
-  const wallDistance = Math.sqrt(wallDistanceSquared) + 1.0;
+  const wallDistance = 300.0;//Math.sqrt(wallDistanceSquared) + 1.0;
 
   elementSegments.push([[-wallDistance, -wallDistance], [wallDistance, -wallDistance]])
   elementSegments.push([[wallDistance, -wallDistance], [wallDistance, wallDistance]])

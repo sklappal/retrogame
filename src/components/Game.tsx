@@ -109,9 +109,6 @@ class Game extends React.Component {
     const overlayCanvas = this.overlayCanvasRef.current!;
     const overlayCanvasHelper =  getCanvasHelper(overlayCanvas, gamestate.camera);
 
-
-    console.log("overlay canvas world to canvas", overlayCanvasHelper.world2canvas([0.0, 0.0]))
-
     overlayCanvas.onmousedown = (e: { button: number; }) => this.OnMouseDownCB(e);
     overlayCanvas.onmouseup = (e: any) => this.OnMouseUpCB(e);
     overlayCanvas.onmousemove = (e: any) => this.OnMouseMoveCB(e, overlayCanvasHelper);

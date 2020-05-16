@@ -6,6 +6,7 @@ import { circle } from "../models/models";
 export const getSimulator = (gamestate: GameState, controlstate: ControlState) => {
 
   const FRICTION_COEFFICIENT = 0.92;
+  const CAMERA_MAX_DISTANCE_FROM_PLAYER_RELATIVE_TO_FOV = 0.3;
 
   const getMovemement = (key1: number, key2: number, controlstate: ControlState) => {
     if (controlstate.isKeyPressed(key1) || controlstate.isKeyPressed(key2)) {
@@ -62,14 +63,14 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState) =
     
     const fov = gamestate.camera.fieldOfview;
     const cameraDistance = vec2.distance(gamestate.player.pos, gamestate.camera.pos);
-    if (vec2.distance(gamestate.player.pos, gamestate.camera.pos) > fov*0.1) {
+    if (vec2.distance(gamestate.player.pos, gamestate.camera.pos) > fov*CAMERA_MAX_DISTANCE_FROM_PLAYER_RELATIVE_TO_FOV) {
       vec2.add(
         gamestate.camera.pos,
         gamestate.camera.pos,
         vec2.scale(
           vec2.create(), 
           vec2.sub(vec2.create(), gamestate.player.pos, gamestate.camera.pos),
-          (cameraDistance-fov*0.1)/cameraDistance
+          (cameraDistance-fov*CAMERA_MAX_DISTANCE_FROM_PLAYER_RELATIVE_TO_FOV)/cameraDistance
         )
       )
     }

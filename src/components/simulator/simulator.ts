@@ -5,6 +5,8 @@ import { circle } from "../models/models";
 
 export const getSimulator = (gamestate: GameState, controlstate: ControlState) => {
 
+  const FRICTION_COEFFICIENT = 0.92;
+
   const getMovemement = (key1: number, key2: number, controlstate: ControlState) => {
     if (controlstate.isKeyPressed(key1) || controlstate.isKeyPressed(key2)) {
       return controlstate.isKeyPressed(key1) ? -1 : 1;
@@ -38,8 +40,8 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState) =
     gamestate.player.aimAngle = Math.atan2(mouseToPlayer[1], mouseToPlayer[0]);
 
     const playerAcceleration = getMovementVector(KeyCodes.KEY_A, KeyCodes.KEY_D, KeyCodes.KEY_W, KeyCodes.KEY_S, controlstate, gamestate.player.acceleration)
-    if (playerAcceleration[0] === 0.0) gamestate.player.velocity[0] *= 0.92
-    if (playerAcceleration[1] === 0.0) gamestate.player.velocity[1] *= 0.92
+    if (playerAcceleration[0] === 0.0) gamestate.player.velocity[0] *= FRICTION_COEFFICIENT;
+    if (playerAcceleration[1] === 0.0) gamestate.player.velocity[1] *= FRICTION_COEFFICIENT;
 
     vec2.add(gamestate.player.velocity, gamestate.player.velocity, playerAcceleration)
     clamp(gamestate.player.velocity, gamestate.player.maxSpeed)
@@ -100,7 +102,6 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState) =
     handleCamera();
     handlePlayerMovement();
     handleDynamicObjects();
-    
   }
 
   return {

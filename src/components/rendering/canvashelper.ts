@@ -12,18 +12,12 @@ export interface CanvasHelper {
 }
 
 export const getCanvasHelper = (canvas: HTMLCanvasElement, camera: Camera) => {
-  
 
-  // FOV says how many pixels we want to see _if_ the view port width is 800
-  // if width is more 
+  // field of view tells how many world units are shown with the default resolution
+  // defaultPixelCount tells how many canvas pixels this is
 
-  // const canvasWidth = 800;
-  // const multiplier = 1.0 // when width = 800
-  // const multiplier = 0.0 // when width = 0.0
-  // const multiplier = width() / 800.0;
-
-  const sizeScaler = camera.fieldOfview;
-  const halfsizeScaler = sizeScaler * 0.5;
+  const fieldOfView = camera.fieldOfview;
+  const halffieldOfView = fieldOfView * 0.5;
 
   const getContext: () => CanvasRenderingContext2D = () => getCanvas().getContext("2d")!;
 
@@ -33,19 +27,19 @@ export const getCanvasHelper = (canvas: HTMLCanvasElement, camera: Camera) => {
 
   const height = () => getCanvas().height;
 
-  const minExtent = () => Math.min(width(), height());
+  const defaultPixelCount = () => 800.0;
 
-  const pixelSize = () => minExtent() * (1.0 / sizeScaler);
+  const pixelSize = () => defaultPixelCount() / fieldOfView;
 
   const world2canvas = (pos: vec2) => vec2.fromValues(
-    (pos[0] - camera.pos[0] + halfsizeScaler) * pixelSize() + (width() - minExtent()) * 0.5, 
-    (pos[1] - camera.pos[1] + halfsizeScaler) * pixelSize() + (height() - minExtent()) * 0.5);
+    (pos[0] - camera.pos[0] + halffieldOfView) * pixelSize() + (width() - defaultPixelCount()) * 0.5, 
+    (pos[1] - camera.pos[1] + halffieldOfView) * pixelSize() + (height() - defaultPixelCount()) * 0.5);
 
   const world2canvasLength = (length: number) => length * pixelSize();
 
   const canvas2world = (pos: vec2) => vec2.fromValues(
-    (pos[0] - (width() - minExtent())*0.5) / pixelSize() - halfsizeScaler + camera.pos[0],
-    (pos[1] - (height() - minExtent())*0.5) / pixelSize() - halfsizeScaler + camera.pos[1]);
+    (pos[0] - (width() - defaultPixelCount())*0.5) / pixelSize() - halffieldOfView + camera.pos[0],
+    (pos[1] - (height() - defaultPixelCount())*0.5) / pixelSize() - halffieldOfView + camera.pos[1]);
 
 
   return {

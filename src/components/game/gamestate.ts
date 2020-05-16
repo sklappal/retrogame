@@ -129,7 +129,7 @@ export const getGameState = () : GameState => {
       staticObjects: items,
       dynamicObjects: [],
       isInsideObject: (pos: vec2) => items.some(item => item.isInside(pos)),
-      ambientColor: "#080808"
+      ambientColor: "#A0A0A0"
      },
     gametime: 0.0,
     fps: 0.0

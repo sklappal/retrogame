@@ -1,13 +1,13 @@
-import { getRenderer } from '../rendering/renderer'
-import { getGameState, ControlState } from './gamestate'
+import { getRenderingHandler, getOverlayRenderingHandler } from '../rendering/renderinghandler'
+import { ControlState, GameState } from './gamestate'
 import { getSimulator } from '../simulator/simulator';
-import { getPrimitiveRenderer } from '../rendering/primitiverenderer';
+import { PrimitiveRenderer } from '../rendering/primitiverenderer';
 
 
-const game = (canvas: HTMLCanvasElement, controlstate: ControlState, requestAnimFrame: any) => {  
+export const game = (mainRenderer: PrimitiveRenderer, overlayRenderer: PrimitiveRenderer, gamestate: GameState, controlstate: ControlState, requestAnimFrame: any) => {  
   
-  const PHYSICS_TIME_STEP = 10; // 100 fps
-  var accumulator = 0;
+  const PHYSICS_TIME_STEP = 10; // 100 fps for physics simulation
+  var physicsAccumulator = 0;
   var curDrawTime = new Date().getTime();
   var prevDrawTime = new Date().getTime();
   var startTime = new Date().getTime();
@@ -22,47 +22,39 @@ const game = (canvas: HTMLCanvasElement, controlstate: ControlState, requestAnim
       return 1.0 / frameTime * 1000.0;
     }
   })();
-
-  const gamestate = getGameState();
   
   const tick = () => {
     prevDrawTime = curDrawTime;
     curDrawTime = new Date().getTime();
     var frameTime = curDrawTime - prevDrawTime;
 
-    accumulator += frameTime;
+    physicsAccumulator += frameTime;
 
-    if (accumulator > 100 * PHYSICS_TIME_STEP) // just skip time
+    if (physicsAccumulator > 100 * PHYSICS_TIME_STEP) // just skip time
     {
-      accumulator = 5 * PHYSICS_TIME_STEP;
+      physicsAccumulator = 5 * PHYSICS_TIME_STEP;
     }
 
     gamestate.gametime = (curDrawTime - startTime) / 1000.0;
     gamestate.fps = calculateFPS();
    
-
-    const primitiveRenderer = getPrimitiveRenderer(canvas, gamestate);
-
-    controlstate.mouse.pos = primitiveRenderer.canvas2world(controlstate.mouse.posCanvas)
-
     const simulator = getSimulator(gamestate, controlstate);
     
-    while (accumulator >= PHYSICS_TIME_STEP)
+    while (physicsAccumulator >= PHYSICS_TIME_STEP)
     {
       simulator.simulate();
       controlstate.clearClickedButtons();
-      accumulator -= PHYSICS_TIME_STEP;
+      physicsAccumulator -= PHYSICS_TIME_STEP;
     }
 
-    // assumption that these guys below don't used clicked states as they are cleared above. Let's see.
-    const renderer = getRenderer(primitiveRenderer, gamestate)
-    renderer.draw();
-    renderer.drawOverlay()
+    // assumption that these guys below don't used clicked states as they are cleared in clearClickedButtons. Let's see.
+    const renderingHandler = getRenderingHandler(mainRenderer, gamestate)
+    renderingHandler.draw();
 
+    const overlayHandler = getOverlayRenderingHandler(overlayRenderer, gamestate);
+    overlayHandler.drawOverlay();
     
     requestAnimFrame(tick);
   }
   tick();
 }
-
-export default game;

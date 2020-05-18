@@ -5,7 +5,9 @@ import { StaticObject } from '../game/gamestate';
 interface Segment {
   id: number
   from: vec2,
-  to: vec2
+  fromCartesian: vec2,
+  to: vec2,
+  toCartesian: vec2
 }
 
 const playerElementRaysRect = (rectPos: vec2, rect: Rect, playerPos: vec2): vec2[] => {
@@ -87,10 +89,6 @@ const toPolar: (vec: vec2) => vec2 = (vec) => {
   return [vec2.length(vec) as number, Math.atan2(vec[1], vec[0])]
 }
 
-const toCartesian = (vec: vec2) => {
-  return vec2.fromValues(vec[0] * Math.cos(vec[1]), vec[0] * Math.sin(vec[1]))
-}
-
 const angleFromT1toT2 = (t1: vec2, t2: vec2) => {
   const diff = t2[1]-t1[1];
   if (diff < 0)
@@ -111,7 +109,7 @@ export const rayLineIntersection = (ray: vec2, point1: vec2, point2: vec2): inte
     const t1 = ((v2[0]*v1[1]) - (v2[1]*v1[0])) / dot;
     const t2 = (vec2.dot(v1, v3)) / dot;
 
-    if (t1 >= 0.0 && (t2 >= -0.001 && t2 <= 1.001)) // consider epsilon
+    if (t1 >= 0.0 && (t2 >= -0.001 && t2 <= 1.001))
         return {intersect: true, distance: t1};
 
     return {intersect: false}
@@ -120,10 +118,22 @@ export const rayLineIntersection = (ray: vec2, point1: vec2, point2: vec2): inte
 type intersection = { intersect: false} | {intersect: true, distance: number}
 
 export const raySegmentIntersection = (rayAngle: number, segment: Segment): intersection  => {
-    const ray = toCartesian([1.0, rayAngle])
+
+    const angle = 0.0;
+    const start = normalizeTo2pi(segment.from[1] - rayAngle)
+    let stop =  normalizeTo2pi(segment.to[1] - rayAngle)
+    if (stop < start) {
+      stop += 2.0 * Math.PI
+    }
     
-    const point1 = toCartesian(segment.from)
-    const point2 = toCartesian(segment.to)
+    if (angle < start || angle > stop) {
+      return {intersect: false}
+    }
+
+    const ray = vec2.fromValues(Math.cos(rayAngle), Math.sin(rayAngle));
+    
+    const point1 = segment.fromCartesian;
+    const point2 = segment.toCartesian;
     
     return rayLineIntersection(ray, point1, point2);
 }
@@ -157,18 +167,20 @@ const distanceToSegmentSquared = (p1: vec2, p2: vec2) => {
                     p1[1] + t * (p2[1] - p1[1])]);
 }
 
+export const toCartesian = (v: vec2) => vec2.fromValues(v[0] * Math.cos(v[1]), v[0] * Math.sin(v[1]));
+
 const isPointBehindSegment = (segment: Segment, polar: vec2) => {
-  const p1 = toCartesian(segment.from)
-  const p2 = toCartesian(segment.to)
+  const p1 = segment.fromCartesian;
+  const p2 = segment.toCartesian;
 
   return isPointBehindLine(p1, p2, toCartesian(polar));
 }
 
 const isSegmentBehindOther = (thisSegment: Segment, otherSegment: Segment) => {
-  const p1 = toCartesian(otherSegment.from)
-  const p2 = toCartesian(otherSegment.to)
+  const p1 = otherSegment.fromCartesian;
+  const p2 = otherSegment.toCartesian;
 
-  return isPointBehindLine(p1, p2, toCartesian(thisSegment.from)) && isPointBehindLine(p1, p2, toCartesian(thisSegment.to));
+  return isPointBehindLine(p1, p2, thisSegment.fromCartesian) && isPointBehindLine(p1, p2, thisSegment.toCartesian);
 }
 
 const normalizeTo2pi = (angle: number) => {
@@ -250,15 +262,7 @@ export const findVisibleRegion = (pos: vec2, radius:number, items: ReadonlyArray
   const radiusSquared = radius*radius;
   elementSegments.filter(el => distanceToSegmentSquared(el[0], el[1]) < radiusSquared)
 
-  const wallDistanceSquared = elementSegments.reduce((acc, curr) => {
-      const dist = distanceToSegmentSquared(curr[0], curr[1]);
-      if (dist > acc) {
-        return dist;
-      }
-      return acc;
-  }, 0.0) ;
-
-  const wallDistance = 300.0;//Math.sqrt(wallDistanceSquared) + 1.0;
+  const wallDistance = 300.0;
 
   elementSegments.push([[-wallDistance, -wallDistance], [wallDistance, -wallDistance]])
   elementSegments.push([[wallDistance, -wallDistance], [wallDistance, wallDistance]])
@@ -274,9 +278,9 @@ export const findVisibleRegion = (pos: vec2, radius:number, items: ReadonlyArray
     const angle2 = angleFromT1toT2(r1, r0)
 
     if (angle2 < angle1) {
-      return {from: r1, to: r0, id: i}
+      return {from: r1, fromCartesian: rayPair[1], to: r0, toCartesian: rayPair[0], id: i}
     }
-    return {from: r0, to: r1, id: i}
+    return {from: r0, fromCartesian: rayPair[0], to: r1, toCartesian: rayPair[1], id: i}
   })
 
   const segments = purgeOccludedSegments(segmentsNonPurged);

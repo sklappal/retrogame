@@ -82,8 +82,8 @@ class Game extends React.Component {
     return (
       <div className="main_container">
         <div className="canvas_container">
-          <canvas ref={this.gpuCanvasRef} />
           <canvas ref={this.mainCanvasRef} />
+          <canvas ref={this.gpuCanvasRef} />
           <canvas ref={this.overlayCanvasRef} />
         </div>
       </div>

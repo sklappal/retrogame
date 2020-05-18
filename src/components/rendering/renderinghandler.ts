@@ -26,10 +26,15 @@ export const getRenderingHandler = (mainRenderer: PrimitiveRenderer, gamestate: 
     mainRenderer.drawLine(pos, vec2.add(vec2.create(), gamestate.player.pos, vec2.fromValues(Math.cos(aimAngle), Math.sin(aimAngle))), "black");
   }
 
-  const drawWorld = () => {
-    gamestate.scene.staticObjects.forEach(el => mainRenderer.drawModel(el.pos, el.model))
+  const drawDynamicObjects = () => {
     gamestate.scene.dynamicObjects.forEach(el => mainRenderer.drawModel(el.pos, el.model))
+  }
 
+  const drawStaticObjects = () => {
+    gamestate.scene.staticObjects.forEach(el => mainRenderer.drawModel(el.pos, el.model))
+  }
+
+  const drawLights = () => {
     mainRenderer.drawCircle(gamestate.scene.light, 0.5, "white")
   }
 
@@ -42,10 +47,10 @@ export const getRenderingHandler = (mainRenderer: PrimitiveRenderer, gamestate: 
     draw: () => {
       mainRenderer.clearCanvas(gamestate.scene.ambientColor);
       
-      //drawLighting();
-      drawWorld();
+      drawStaticObjects();
       drawPlayer();
-
+      drawDynamicObjects();
+      drawLights();
       drawOverlay();
     }
   }

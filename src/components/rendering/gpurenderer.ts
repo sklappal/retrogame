@@ -199,7 +199,6 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
         offScreenCanvas.width = canvasHelper.width();
         offScreenCanvas.height = canvasHelper.height();
         gl.viewport(0, 0, canvasHelper.width(), canvasHelper.height());
-        
       }
 
       
@@ -209,9 +208,12 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
 
       copyGameState(aspectRatio);
 
+      // const ctx = primitiveRenderer.getContext();
+      // ctx.filter = "blur(2px)"
       const lightvolumes = findVisibleRegion(gamestate.player.pos, 200.0, gamestate.scene.staticObjects);
       primitiveRenderer.clearCanvas("#00000000");
       primitiveRenderer.fillPoly(lightvolumes, "red");
+      gamestate.scene.staticObjects.forEach(el => primitiveRenderer.drawModel(el.pos, el.model))
 
       draw();
     }

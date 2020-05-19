@@ -22,7 +22,7 @@ export const getCanvasHelper = (canvas: HTMLCanvasElement, camera: Camera) => {
 
   const getContext: () => CanvasRenderingContext2D = () => getCanvas().getContext("2d")!;
 
-  const getWebGLContext: () => WebGLRenderingContext = () => getCanvas().getContext("webgl")!;
+  const getWebGLContext: () => WebGLRenderingContext = () => getCanvas().getContext("webgl2")!;
 
   const getCanvas = () => canvas;
   

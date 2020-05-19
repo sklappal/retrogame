@@ -19,17 +19,17 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
     return null;
   }
 
-  const vertexShaderSource = `
+  const vertexShaderSource = `#version 300 es
   ///////////////////
   // Vertex Shader //
   ///////////////////
     
 
-  attribute vec3 position;
-  attribute vec2 coord;
+  in vec3 position;
+  in vec2 coord;
 
-  varying vec2 texCoord;
-  varying vec2 vPos;
+  out vec2 texCoord;
+  out vec2 vPos;
   uniform float aspect;
 
   void main(void) {
@@ -40,7 +40,7 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
 
   ///////////////////`;
 
-  const fragmentShaderSource = `
+  const fragmentShaderSource = `#version 300 es
   /////////////////////
   // Fragment Shader //
   /////////////////////
@@ -48,11 +48,13 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
   precision mediump float;
   uniform sampler2D mainTexture;
   uniform sampler2D visibilityTexture;
-  varying vec2 texCoord;
-  varying vec2 vPos;
+  in vec2 texCoord;
+  in vec2 vPos;
 
   uniform vec2 playerPosition;
   uniform vec2 lightPosition;
+
+  out vec4 fragmentColor;
 
   vec3 getLightContribution(vec2 lightPos, vec2 currentPosition, vec3 lightColor, float lightRadius) {
     float d = distance(currentPosition, lightPos) * lightRadius;
@@ -84,8 +86,8 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
 
 
   void main(void) {
-    vec4 visibility = texture2D(visibilityTexture, texCoord);
-    vec4 worldColor = texture2D(mainTexture, texCoord);
+    vec4 visibility = texture(visibilityTexture, texCoord);
+    vec4 worldColor = texture(mainTexture, texCoord);
 
    // if (visibility.x == 1.0) {
 
@@ -96,11 +98,11 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
       vec3 ambientLight = vec3(0.0, 0.0, 0.1);
 
       
-      gl_FragColor = worldColor * vec4(toneMap(playerLight + lightLight + ambientLight) , 1.0);
+      fragmentColor = worldColor * vec4(toneMap(playerLight + lightLight + ambientLight) , 1.0);
 
-      //gl_FragColor = worldColor * ambientLight;
+      //fragmentColor = worldColor * ambientLight;
     // } else {
-    //   gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+    //   fragmentColor = vec4(0.0, 0.0, 0.0, 1.0);
     // }
 
     //

@@ -19,7 +19,7 @@ export const getRenderingHandler = (mainRenderer: PrimitiveRenderer,
     const time = new Date().getTime();
     const lightvolumes = findVisibleRegion(gamestate.player.pos, 120.0, gamestate.scene.staticObjects);
     visibilityRenderer.fillPoly(lightvolumes, "red");
-    console.log(new Date().getTime() - time);
+    //console.log(new Date().getTime() - time);
   }
 
   const drawPlayer = () => {

@@ -1,6 +1,7 @@
 import { CanvasHelper } from './canvashelper'
 import { GameState } from '../game/gamestate';
-import { vec2 } from 'gl-matrix';
+import { vec2, mat3 } from 'gl-matrix';
+import { vertexShaderSource, fragmentShaderSource } from './shaders';
 
 
 export interface GpuRenderer {
@@ -18,98 +19,6 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
     console.error("Failed to get gl context.")
     return null;
   }
-
-  const vertexShaderSource = `#version 300 es
-  ///////////////////
-  // Vertex Shader //
-  ///////////////////
-    
-
-  in vec3 position;
-  in vec2 coord;
-
-  out vec2 texCoord;
-  out vec2 vPos;
-  uniform float aspect;
-
-  void main(void) {
-    gl_Position = vec4(position, 1.0);
-    texCoord = coord;
-    vPos = vec2(position.x * aspect,  position.y);
-  }
-
-  ///////////////////`;
-
-  const fragmentShaderSource = `#version 300 es
-  /////////////////////
-  // Fragment Shader //
-  /////////////////////
-
-  precision mediump float;
-  uniform sampler2D mainTexture;
-  uniform sampler2D visibilityTexture;
-  in vec2 texCoord;
-  in vec2 vPos;
-
-  uniform vec2 playerPosition;
-  uniform vec2 lightPosition;
-
-  out vec4 fragmentColor;
-
-  vec3 getLightContribution(vec2 lightPos, vec2 currentPosition, vec3 lightColor, float lightRadius) {
-    float d = distance(currentPosition, lightPos) * lightRadius;
-    return clamp(lightColor * (1.0 - d*d), 0.0, 1.0);
-  }
-
-
-  vec3 invert(vec3 v) {
-    return vec3(1.0, 1.0, 1.0) - v;
-  }
-
-  vec3 screen(vec3 first, vec3 second) {
-    return vec3(1.0, 1.0, 1.0)  - invert(first)*invert(second);
-  }
-
-  // vec3 screen(vec3 first, vec3 second, vec3 third) {
-    // return vec3(1.0, 1.0, 1.0)  - invert(first)*invert(second)*invert(third);
-  // }
-
-  vec3 toneMap(vec3 hdrColor) {
-    const float gamma = 2.2;
-  
-    const float exposure = 1.0;
-    // Exposure tone mapping
-    vec3 mapped = vec3(1.0) - exp(-hdrColor * exposure);
-    // Gamma correction 
-    return pow(mapped, vec3(1.0 / gamma));
-  }
-
-
-  void main(void) {
-    vec4 visibility = texture(visibilityTexture, texCoord);
-    vec4 worldColor = texture(mainTexture, texCoord);
-
-   // if (visibility.x == 1.0) {
-
-      vec3 playerLight = getLightContribution(playerPosition, vPos, vec3(0.6, .0, 0.0), 2.0);
-      
-      vec3 lightLight = getLightContribution(lightPosition, vPos, vec3(.0, .2, 0.0), 1.0);
-
-      vec3 ambientLight = vec3(0.0, 0.0, 0.1);
-
-      
-      fragmentColor = worldColor * vec4(toneMap(playerLight + lightLight + ambientLight) , 1.0);
-
-      //fragmentColor = worldColor * ambientLight;
-    // } else {
-    //   fragmentColor = vec4(0.0, 0.0, 0.0, 1.0);
-    // }
-
-    //
-  }
-
-  /////////////////////`;
-
 
   const compileShader = (shaderSource: string, shaderType: number): WebGLShader => {
     const shader = gl.createShader(shaderType)!;
@@ -166,7 +75,7 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STATIC_DRAW);
 
-    const position = gl.getAttribLocation(program, "position"); // get the index of position attribute
+    const position = gl.getAttribLocation(program, "positionNdc"); // get the index of position attribute
 
     gl.vertexAttribPointer(position, 3, gl.FLOAT, false, 0, 0); // bind it to the current buffer (^^ vertex buffer)
     gl.enableVertexAttribArray(position);
@@ -197,22 +106,24 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
 
   }
 
-  const setUniform = (pos: vec2, name: string, aspect: number) => {
+  const setUniform = (pos: vec2, name: string) => {
     const uniform = gl.getUniformLocation(program, name);
-    const canvasCoordinates = canvasHelper.world2canvas(pos);
-
-    const vertexCoordinates = [ (canvasCoordinates[0] / canvasHelper.width()) * 2.0 - 1, 
-      (canvasCoordinates[1] / canvasHelper.height()) * 2.0 - 1]
-
-    gl.uniform2fv(uniform, [ aspect * vertexCoordinates[0], -1.0*vertexCoordinates[1]]);
+    gl.uniform2fv(uniform, pos);
   }
 
-  const copyGameState = (aspect: number) => {
-    setUniform(gamestate.player.pos, "playerPosition", aspect);
 
-    setUniform(gamestate.scene.light, "lightPosition", aspect);
+
+  const copyGameState = () => {
+    setUniform(gamestate.player.pos, "playerPositionWorld");
+
+    setUniform(gamestate.scene.light, "lightPositionWorld");
+
+    const viewMatrix = gl.getUniformLocation(program, "viewMatrix");
+    gl.uniformMatrix3fv(viewMatrix, false, canvasHelper.world2viewMatrix());
+
+    const projectionMatrix = gl.getUniformLocation(program, "projectionMatrix");
+    gl.uniformMatrix3fv(projectionMatrix, false, canvasHelper.view2ndcMatrix());
   }
-
   
   const initTexture = () => {
     const texture = gl.createTexture();
@@ -278,7 +189,7 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
       const aspect = gl.getUniformLocation(program, "aspect");
       gl.uniform1f(aspect, aspectRatio);
 
-      copyGameState(aspectRatio);
+      copyGameState();
 
       draw(mainCanvas, visibilityCanvas);
     }

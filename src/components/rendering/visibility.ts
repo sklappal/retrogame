@@ -339,10 +339,10 @@ export const findVisibleRegion = (pos: vec2, radius:number, items: ReadonlyArray
         open.delete(segment);
       }
     })
-
+// TODO FIXME
     const nearestSegment = findNearestIntersectingSegment(currentPoint.point[1], open);
     if (nearestSegment.segment === null) {
-      console.log("no intersection really sad")
+      //console.log("no intersection really sad")
       continue;
     }
       
@@ -353,10 +353,10 @@ export const findVisibleRegion = (pos: vec2, radius:number, items: ReadonlyArray
         points.push([d1.distance, currentPoint.point[1]])
       } else {
         if (!currentPoint.startingPoint) {
-          console.log("no intersection but current point finishes segment...... so...")
+        //  console.log("no intersection but current point finishes segment...... so...")
         }
         else {
-          console.log("no intersection sad panda")
+          //console.log("no intersection sad panda")
         }
       }
       triangleStart = [nearestSegment.distance, currentPoint.point[1]]

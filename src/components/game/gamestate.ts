@@ -37,7 +37,7 @@ export interface Camera   {
   velocity: vec2
 
   // number of world units visible on the smaller dimension of camera
-  fieldOfview: number
+  fieldOfView: number
 }
 
 export interface Config {
@@ -122,7 +122,7 @@ export const getGameState = () : GameState => {
     camera: {
       pos: vec2.fromValues(0.0, 0.0),
       velocity: vec2.fromValues(0.0, 0.0),
-      fieldOfview: 100.0
+      fieldOfView: 100.0
     },
     scene: {
       light: vec2.fromValues(10.0, 10.0),

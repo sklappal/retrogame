@@ -6,7 +6,7 @@ import { circle } from "../models/models";
 export const getSimulator = (gamestate: GameState, controlstate: ControlState) => {
 
   const FRICTION_COEFFICIENT = 0.8
-  const CAMERA_MAX_DISTANCE_FROM_PLAYER_RELATIVE_TO_FOV = 0.3;
+  const CAMERA_MAX_DISTANCE_FROM_PLAYER_RELATIVE_TO_FOV = 0.2;
 
   const getMovemement = (key1: number, key2: number, controlstate: ControlState) => {
     if (controlstate.isKeyPressed(key1) || controlstate.isKeyPressed(key2)) {
@@ -57,23 +57,25 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState) =
 
   }
 
+  const sign = (n: number) => n < 0 ? -1.0 : 1.0;
+
   const handleCamera = () => {
 
     vec2.add(gamestate.camera.pos, gamestate.camera.pos, gamestate.camera.velocity);
     
-    const fov = gamestate.camera.fieldOfview;
-    const cameraDistance = vec2.distance(gamestate.player.pos, gamestate.camera.pos);
-    if (vec2.distance(gamestate.player.pos, gamestate.camera.pos) > fov*CAMERA_MAX_DISTANCE_FROM_PLAYER_RELATIVE_TO_FOV) {
-      vec2.add(
-        gamestate.camera.pos,
-        gamestate.camera.pos,
-        vec2.scale(
-          vec2.create(), 
-          vec2.sub(vec2.create(), gamestate.player.pos, gamestate.camera.pos),
-          (cameraDistance-fov*CAMERA_MAX_DISTANCE_FROM_PLAYER_RELATIVE_TO_FOV)/cameraDistance
-        )
-      )
+    const fov = gamestate.camera.fieldOfView;
+    const allowedDistance = fov*CAMERA_MAX_DISTANCE_FROM_PLAYER_RELATIVE_TO_FOV;
+
+    const xdistance = gamestate.player.pos[0] - gamestate.camera.pos[0];
+    if (Math.abs(xdistance) > allowedDistance) {
+      vec2.add(gamestate.camera.pos, gamestate.camera.pos, vec2.fromValues(xdistance -  sign(xdistance) * allowedDistance, 0.0))
     }
+    
+    const ydistance = gamestate.player.pos[1] - gamestate.camera.pos[1];
+    if (Math.abs(ydistance) > allowedDistance) {
+      vec2.add(gamestate.camera.pos, gamestate.camera.pos, vec2.fromValues(0.0, ydistance -  sign(ydistance) * allowedDistance))
+    }
+
 
   }
 

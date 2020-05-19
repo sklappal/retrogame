@@ -1,4 +1,4 @@
-import { vec2 } from "gl-matrix";
+import { vec2, mat3 } from "gl-matrix";
 import { Camera } from "../game/gamestate";
 
 
@@ -10,6 +10,11 @@ export interface CanvasHelper {
   canvas2world(vec: vec2): vec2
   world2canvasLength(n: number): number
   world2canvas(vec: vec2): vec2
+  world2view(vec2: vec2): vec2
+  world2canvasMatrix(): mat3
+  world2viewMatrix(): mat3
+  view2canvasMatrix(): mat3
+  view2ndcMatrix(): mat3
 }
 
 export const getCanvasHelper = (canvas: HTMLCanvasElement, camera: Camera) => {
@@ -17,8 +22,9 @@ export const getCanvasHelper = (canvas: HTMLCanvasElement, camera: Camera) => {
   // field of view tells how many world units are shown with the default resolution
   // defaultPixelCount tells how many canvas pixels this is
 
-  const fieldOfView = camera.fieldOfview;
-  const halffieldOfView = fieldOfView * 0.5;
+  const fieldOfView = camera.fieldOfView;
+  const defaultPixelCount = 800.0;
+  const pixelSize = defaultPixelCount / fieldOfView;
 
   const getContext: () => CanvasRenderingContext2D = () => getCanvas().getContext("2d")!;
 
@@ -30,19 +36,33 @@ export const getCanvasHelper = (canvas: HTMLCanvasElement, camera: Camera) => {
 
   const height = () => getCanvas().height;
 
-  const defaultPixelCount = () => 800.0;
+  const world2view = (pos: vec2) => vec2.fromValues(pos[0] - camera.pos[0], pos[1] - camera.pos[1])
 
-  const pixelSize = () => defaultPixelCount() / fieldOfView;
+  const world2viewMatrix = () => mat3.fromTranslation(mat3.create(), vec2.negate(vec2.create(), camera.pos));
 
-  const world2canvas = (pos: vec2) => vec2.fromValues(
-    (pos[0] - camera.pos[0] + halffieldOfView) * pixelSize() + (width() - defaultPixelCount()) * 0.5, 
-    (pos[1] - camera.pos[1] + halffieldOfView) * pixelSize() + (height() - defaultPixelCount()) * 0.5);
+  const view2canvasMatrix = () => mat3.fromValues(pixelSize, 0, 0, 0, pixelSize, 0, width() * 0.5, height() * 0.5, 1);
 
-  const world2canvasLength = (length: number) => length * pixelSize();
+  const world2canvasMatrix = () => mat3.multiply(mat3.create(), view2canvasMatrix(), world2viewMatrix());
 
-  const canvas2world = (pos: vec2) => vec2.fromValues(
-    (pos[0] - (width() - defaultPixelCount())*0.5) / pixelSize() - halffieldOfView + camera.pos[0],
-    (pos[1] - (height() - defaultPixelCount())*0.5) / pixelSize() - halffieldOfView + camera.pos[1]);
+  const canvas2ndcMatrix = () => mat3.fromValues(2 / width(), 0, 0, 0, -2 / height(), 0, -1, +1, 1);
+
+  const view2ndcMatrix = () =>  mat3.multiply(mat3.create(), canvas2ndcMatrix(),  view2canvasMatrix());
+
+  const view2canvas = (pos: vec2) => vec2.fromValues(
+    pos[0] * pixelSize + width() * 0.5, 
+    pos[1] * pixelSize + height() * 0.5);
+
+  const world2canvas = (pos: vec2) => view2canvas(world2view(pos));
+
+  const world2canvasLength = (length: number) => length * pixelSize;
+
+  const canvas2view = (pos: vec2) => vec2.fromValues(
+    (pos[0] - width() * 0.5) / pixelSize,
+    (pos[1] - height() * 0.5) / pixelSize);
+
+  const view2world = (pos: vec2) => vec2.fromValues(pos[0] + camera.pos[0], pos[1] + camera.pos[1])
+
+  const canvas2world = (pos: vec2) => view2world(canvas2view(pos));
 
 
   return {
@@ -53,6 +73,11 @@ export const getCanvasHelper = (canvas: HTMLCanvasElement, camera: Camera) => {
     height: height,
     world2canvas: world2canvas,
     world2canvasLength: world2canvasLength,
-    canvas2world: canvas2world
+    canvas2world: canvas2world,
+    world2canvasMatrix: world2canvasMatrix,
+    world2view: world2view,
+    world2viewMatrix: world2viewMatrix,
+    view2canvasMatrix: view2canvasMatrix,
+    view2ndcMatrix: view2ndcMatrix
   }
 }

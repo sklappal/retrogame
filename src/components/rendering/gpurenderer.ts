@@ -1,7 +1,6 @@
-import { CanvasHelper, getCanvasHelper } from './canvashelper'
+import { CanvasHelper } from './canvashelper'
 import { GameState } from '../game/gamestate';
-import { getPrimitiveRenderer } from './primitiverenderer';
-import { findVisibleRegion } from './visibility';
+import { vec2 } from 'gl-matrix';
 
 
 export interface GpuRenderer {
@@ -9,7 +8,7 @@ export interface GpuRenderer {
   width(): number;
   height(): number;
 
-  draw(): void;
+  draw(mainCanvas: HTMLCanvasElement, visibilityCanvas: HTMLCanvasElement): void;
 }
 
 export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState) => {
@@ -47,24 +46,64 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
   /////////////////////
 
   precision mediump float;
-  uniform sampler2D texture0;
+  uniform sampler2D mainTexture;
+  uniform sampler2D visibilityTexture;
   varying vec2 texCoord;
   varying vec2 vPos;
 
   uniform vec2 playerPosition;
+  uniform vec2 lightPosition;
+
+  vec3 getLightContribution(vec2 lightPos, vec2 currentPosition, vec3 lightColor, float lightRadius) {
+    float d = distance(currentPosition, lightPos) * lightRadius;
+    return clamp(lightColor * (1.0 - d*d), 0.0, 1.0);
+  }
+
+
+  vec3 invert(vec3 v) {
+    return vec3(1.0, 1.0, 1.0) - v;
+  }
+
+  vec3 screen(vec3 first, vec3 second) {
+    return vec3(1.0, 1.0, 1.0)  - invert(first)*invert(second);
+  }
+
+  // vec3 screen(vec3 first, vec3 second, vec3 third) {
+    // return vec3(1.0, 1.0, 1.0)  - invert(first)*invert(second)*invert(third);
+  // }
+
+  vec3 toneMap(vec3 hdrColor) {
+    const float gamma = 2.2;
+  
+    const float exposure = 1.0;
+    // Exposure tone mapping
+    vec3 mapped = vec3(1.0) - exp(-hdrColor * exposure);
+    // Gamma correction 
+    return pow(mapped, vec3(1.0 / gamma));
+  }
+
 
   void main(void) {
-    vec4 color = texture2D(texture0, texCoord);
+    vec4 visibility = texture2D(visibilityTexture, texCoord);
+    vec4 worldColor = texture2D(mainTexture, texCoord);
 
-    float d = distance(vPos, playerPosition.xy)*2.0;
-    
+   // if (visibility.x == 1.0) {
 
-    if (color.x == 0.0) {
-      gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-    }
-    else {
-      gl_FragColor = mix(vec4(1.0, 0.0, 0.0, 1.0), vec4(0.0, 0.0, 0.0, 1.0), sqrt(d)*0.8);
-    }
+      vec3 playerLight = getLightContribution(playerPosition, vPos, vec3(0.6, .0, 0.0), 2.0);
+      
+      vec3 lightLight = getLightContribution(lightPosition, vPos, vec3(.0, .2, 0.0), 1.0);
+
+      vec3 ambientLight = vec3(0.0, 0.0, 0.1);
+
+      
+      gl_FragColor = worldColor * vec4(toneMap(playerLight + lightLight + ambientLight) , 1.0);
+
+      //gl_FragColor = worldColor * ambientLight;
+    // } else {
+    //   gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+    // }
+
+    //
   }
 
   /////////////////////`;
@@ -110,19 +149,8 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
 
     return program;
   };
-  
-  var initTexture = () => {
-    const texture = gl.createTexture();
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  };
-
-  var initGl = (program: WebGLProgram) => {
+  const initGl = (program: WebGLProgram) => {
     const verts = [
       -1, -1, 0.0,
       1, -1, 0.0,
@@ -159,24 +187,70 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
     gl.enableVertexAttribArray(texCoord);
 
 
-    const texture0 = gl.getUniformLocation(program, "texture0");
-    gl.uniform1i(texture0, 0);
+    const mainTexture = gl.getUniformLocation(program, "mainTexture");
+    gl.uniform1i(mainTexture, 0);
+
+    const visibilityTexture = gl.getUniformLocation(program, "visibilityTexture");
+    gl.uniform1i(visibilityTexture, 1);
+
   }
 
-  const copyGameState = (aspect: number) => {
-    const playerPosition = gl.getUniformLocation(program, "playerPosition");
-    const canvasCoordinates = canvasHelper.world2canvas(gamestate.player.pos);
+  const setUniform = (pos: vec2, name: string, aspect: number) => {
+    const uniform = gl.getUniformLocation(program, name);
+    const canvasCoordinates = canvasHelper.world2canvas(pos);
 
     const vertexCoordinates = [ (canvasCoordinates[0] / canvasHelper.width()) * 2.0 - 1, 
       (canvasCoordinates[1] / canvasHelper.height()) * 2.0 - 1]
 
-    gl.uniform2fv(playerPosition, [ aspect * vertexCoordinates[0], -1.0*vertexCoordinates[1]]);
+    gl.uniform2fv(uniform, [ aspect * vertexCoordinates[0], -1.0*vertexCoordinates[1]]);
   }
 
-  const offScreenCanvas = document.createElement('canvas');
-  const draw = () => {
+  const copyGameState = (aspect: number) => {
+    setUniform(gamestate.player.pos, "playerPosition", aspect);
+
+    setUniform(gamestate.scene.light, "lightPosition", aspect);
+  }
+
+  
+  const initTexture = () => {
+    const texture = gl.createTexture();
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    return texture;
+  };
+  
+  let mainTexture = initTexture();
+  let visibilityTexture = initTexture();
+  let initializeTextures = true;
+
+  const draw = (mainCanvas: HTMLCanvasElement, visibilityCanvas: HTMLCanvasElement) => {
     gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, offScreenCanvas);
+    
+    if (initializeTextures) {
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, mainTexture);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, mainCanvas);
+
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, visibilityTexture);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, visibilityCanvas);
+
+      initializeTextures = false;
+    } else {
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, mainTexture);
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, mainCanvas);
+
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, visibilityTexture);
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, visibilityCanvas);
+    }
+
+
     gl.drawArrays(gl.TRIANGLES, 0, 6);
   }
 
@@ -184,23 +258,19 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
   if (!program) {
     throw new Error("Failed to initialize.")
   }
+  
   initGl(program);
-  initTexture();
-
-  const primitiveRenderer = getPrimitiveRenderer(getCanvasHelper(offScreenCanvas, gamestate.camera));
+  
 
 
   return {
     getContext: canvasHelper.getWebGLContext,
     width: canvasHelper.width,
     height: canvasHelper.height,
-    draw: () => {
-      if (canvasHelper.width() != offScreenCanvas.width || canvasHelper.height() != offScreenCanvas.height) {
-        offScreenCanvas.width = canvasHelper.width();
-        offScreenCanvas.height = canvasHelper.height();
-        gl.viewport(0, 0, canvasHelper.width(), canvasHelper.height());
-      }
+    draw: (mainCanvas: HTMLCanvasElement, visibilityCanvas: HTMLCanvasElement) => {
 
+
+      gl.viewport(0, 0, canvasHelper.width(), canvasHelper.height());
       
       const aspectRatio =  canvasHelper.width() / canvasHelper.height();
       const aspect = gl.getUniformLocation(program, "aspect");
@@ -208,14 +278,7 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
 
       copyGameState(aspectRatio);
 
-      // const ctx = primitiveRenderer.getContext();
-      // ctx.filter = "blur(2px)"
-      const lightvolumes = findVisibleRegion(gamestate.player.pos, 200.0, gamestate.scene.staticObjects);
-      primitiveRenderer.clearCanvas("#00000000");
-      primitiveRenderer.fillPoly(lightvolumes, "red");
-      gamestate.scene.staticObjects.forEach(el => primitiveRenderer.drawModel(el.pos, el.model))
-
-      draw();
+      draw(mainCanvas, visibilityCanvas);
     }
   }
 }

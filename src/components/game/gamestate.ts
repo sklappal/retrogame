@@ -75,7 +75,7 @@ const player = {
   pos: vec2.fromValues(0.0, 0.0),
   velocity: vec2.fromValues(0.0, 0.0),
   model: circle(1.0, "red"),
-  maxSpeed: 0.5,
+  maxSpeed: 0.2,
   acceleration: 0.5,
   aimAngle: 0.0
 }
@@ -129,7 +129,7 @@ export const getGameState = () : GameState => {
       staticObjects: items,
       dynamicObjects: [],
       isInsideObject: (pos: vec2) => items.some(item => item.isInside(pos)),
-      ambientColor: "#00000000"
+      ambientColor: "white"
      },
     gametime: 0.0,
     fps: 0.0

@@ -125,7 +125,7 @@ export const getPrimitiveRenderer = (canvasHelper: CanvasHelper) => {
 
   const drawTextCanvas = (pos: vec2, text: string) => {
     const ctx = getContext();
-    ctx.fillStyle = "white";
+    ctx.fillStyle = "magenta";
     ctx.fillText(text, pos[0], pos[1]);
   }
 

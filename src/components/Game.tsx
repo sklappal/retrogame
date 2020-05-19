@@ -8,16 +8,19 @@ import { getCanvasHelper, CanvasHelper } from './rendering/canvashelper';
 
 import '../styles/Game.css'
 import { getGpuRenderer } from './rendering/gpurenderer';
+import { getRenderingHandler } from './rendering/renderinghandler';
 
 class Game extends React.Component {
   controlstate: ControlState;
-  mainCanvasRef: React.RefObject<HTMLCanvasElement>;
+  mainCanvas: HTMLCanvasElement | null;
+  visibilityCanvas: HTMLCanvasElement |null;
   gpuCanvasRef: React.RefObject<HTMLCanvasElement>;
   overlayCanvasRef: React.RefObject<HTMLCanvasElement>;
 
   constructor(props: Readonly<{}>) {
     super(props)
-    this.mainCanvasRef = React.createRef()
+    this.mainCanvas = null;
+    this.visibilityCanvas = null;
     this.gpuCanvasRef = React.createRef()
     this.overlayCanvasRef = React.createRef()
 
@@ -58,7 +61,7 @@ class Game extends React.Component {
   }
 
   ScreenToCanvas(sx: number, sy: number) {
-    const rect = this.mainCanvasRef.current!.getBoundingClientRect();
+    const rect = this.overlayCanvasRef.current!.getBoundingClientRect();
     return vec2.fromValues(sx - rect.left, sy - rect.top);
   }
 
@@ -82,17 +85,19 @@ class Game extends React.Component {
     return (
       <div className="main_container">
         <div className="canvas_container">
-          <canvas ref={this.mainCanvasRef} />
-          <canvas ref={this.gpuCanvasRef} />
-          <canvas ref={this.overlayCanvasRef} />
+          <canvas width="800px" height="600px" ref={this.gpuCanvasRef} />
+          <canvas width="800px" height="600px" ref={this.overlayCanvasRef} />
         </div>
       </div>
     );
   }
 
   resize() {
-    this.mainCanvasRef.current!.width  = window.innerWidth;
-    this.mainCanvasRef.current!.height = window.innerHeight;
+    this.mainCanvas!.width  = window.innerWidth;
+    this.mainCanvas!.height = window.innerHeight;
+
+    this.visibilityCanvas!.width = window.innerWidth;
+    this.visibilityCanvas!.height = window.innerHeight;
 
     this.gpuCanvasRef.current!.width  = window.innerWidth;
     this.gpuCanvasRef.current!.height = window.innerHeight;
@@ -104,8 +109,20 @@ class Game extends React.Component {
   componentDidMount() {
 
     const gamestate = getGameState();
-    const mainCanvasHelper = getCanvasHelper(this.mainCanvasRef.current!, gamestate.camera);
+
+
+    this.mainCanvas = document.createElement('canvas');
+    this.mainCanvas.width = this.gpuCanvasRef.current!.width;
+    this.mainCanvas.height = this.gpuCanvasRef.current!.height;
+    
+    this.visibilityCanvas = document.createElement('canvas');
+    this.visibilityCanvas.width = this.gpuCanvasRef.current!.width;
+    this.visibilityCanvas.height = this.gpuCanvasRef.current!.height;
+    
+    const mainCanvasHelper = getCanvasHelper(this.mainCanvas, gamestate.camera);
     const mainRenderer = getPrimitiveRenderer(mainCanvasHelper);
+
+    const visibilityRenderer = getPrimitiveRenderer(getCanvasHelper(this.visibilityCanvas, gamestate.camera))
 
     const overlayCanvas = this.overlayCanvasRef.current!;
     const overlayCanvasHelper =  getCanvasHelper(overlayCanvas, gamestate.camera);
@@ -119,8 +136,8 @@ class Game extends React.Component {
 
     const overlayRenderer = getPrimitiveRenderer(overlayCanvasHelper);
 
-    window.onresize = this.resize;
-    this.resize();
+    // window.onresize = this.resize;
+    // this.resize();
 
     const gpuRenderer = getGpuRenderer(getCanvasHelper(this.gpuCanvasRef.current!, gamestate.camera), gamestate);
   
@@ -128,7 +145,9 @@ class Game extends React.Component {
       return;
     }
 
-    startGame(mainRenderer, gpuRenderer, overlayRenderer, gamestate, this.controlstate, requestAnimFrame());
+    const renderingHandler = getRenderingHandler(mainRenderer, visibilityRenderer, gpuRenderer, overlayRenderer, gamestate);
+
+    startGame(renderingHandler, gamestate, this.controlstate, requestAnimFrame());
   }
 }
 

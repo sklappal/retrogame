@@ -2,20 +2,24 @@ import { PrimitiveRenderer } from './primitiverenderer'
 import { findVisibleRegion } from './visibility'
 import { GameState } from '../game/gamestate';
 import { vec2 } from 'gl-matrix';
+import { GpuRenderer } from './gpurenderer';
 
-export const getRenderingHandler = (mainRenderer: PrimitiveRenderer, gamestate: GameState) => {
-  
-  const drawLighting = () => {
-    const ctx = mainRenderer.getContext()
-    ctx.filter = "blur(2px)"
-    
-    const lightvolumes2 = findVisibleRegion(gamestate.scene.light, 40.0, gamestate.scene.staticObjects);
-    mainRenderer.fillPolyRadial(lightvolumes2, gamestate.scene.light, 40, "#808080")
-    
+export interface RenderingHandler {
+  draw(): void;
+}
+
+export const getRenderingHandler = (mainRenderer: PrimitiveRenderer, 
+    visibilityRenderer: PrimitiveRenderer, 
+    gpuRenderer: GpuRenderer,
+    overlayRenderer: PrimitiveRenderer,
+    gamestate: GameState) => {
+
+
+  const drawVisibility = () => {
+    const time = new Date().getTime();
     const lightvolumes = findVisibleRegion(gamestate.player.pos, 120.0, gamestate.scene.staticObjects);
-    mainRenderer.fillPolyRadial(lightvolumes, gamestate.player.pos, 120, "#808080")
-
-    ctx.filter = "none"
+    visibilityRenderer.fillPoly(lightvolumes, "red");
+    console.log(new Date().getTime() - time);
   }
 
   const drawPlayer = () => {
@@ -38,30 +42,38 @@ export const getRenderingHandler = (mainRenderer: PrimitiveRenderer, gamestate: 
     mainRenderer.drawCircle(gamestate.scene.light, 0.5, "white")
   }
 
+  const drawMainCanvas = () => {
+    drawStaticObjects();
+    drawPlayer();
+    drawDynamicObjects();
+    drawLights();
+  }
+
+  const drawGpu = () => {
+    gpuRenderer.draw(mainRenderer.getContext().canvas, visibilityRenderer.getContext().canvas);
+  }
+
+  
+
   const drawOverlay = () => {
     var text = "FPS: " + gamestate.fps.toFixed(1)   
-    mainRenderer.drawTextCanvas([mainRenderer.width()-120, mainRenderer.height()-40], text)
+    overlayRenderer.drawTextCanvas([overlayRenderer.width()-120, overlayRenderer.height()-40], text)
   }
   
   return {
     draw: () => {
-      mainRenderer.clearCanvas(gamestate.scene.ambientColor);
       
-      drawStaticObjects();
-      drawPlayer();
-      drawDynamicObjects();
-      drawLights();
-      drawOverlay();
-    }
-  }
-}
-
-export const getOverlayRenderingHandler = (overlayRenderer: PrimitiveRenderer, gamestate: GameState) => {
-  return {
-    drawOverlay: () =>  {
+      mainRenderer.clearCanvas(gamestate.scene.ambientColor);
+      visibilityRenderer.clearCanvas("black");
       overlayRenderer.clearCanvas("#00000000");
-      var text = "FPS: " + gamestate.fps.toFixed(1)   
-      overlayRenderer.drawTextCanvas([overlayRenderer.width()-120, overlayRenderer.height()-40], text)
+
+      drawMainCanvas();
+
+      drawVisibility();
+
+      drawGpu();
+
+      drawOverlay();
     }
   }
 }

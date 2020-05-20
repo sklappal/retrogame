@@ -1,7 +1,8 @@
 import { CanvasHelper } from './canvashelper'
 import { GameState } from '../game/gamestate';
-import { vec2, mat3 } from 'gl-matrix';
+import { vec2, mat3, vec4 } from 'gl-matrix';
 import { vertexShaderSource, fragmentShaderSource } from './shaders';
+import { Rect, Circle, Model } from '../models/models';
 
 
 export interface GpuRenderer {
@@ -9,7 +10,13 @@ export interface GpuRenderer {
   width(): number;
   height(): number;
 
-  draw(mainCanvas: HTMLCanvasElement, visibilityCanvas: HTMLCanvasElement): void;
+  draw(): void;
+}
+
+interface BufferInfo {
+  buffer: WebGLBuffer,
+  itemCount: number
+  itemSize: number
 }
 
 export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState) => {
@@ -61,48 +68,75 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
     return program;
   };
 
-  const initGl = (program: WebGLProgram) => {
-    const verts = [
-      -1, -1, 0.0,
-      1, -1, 0.0,
-      1, 1, 0.0,
+  const buffers: Map<string, BufferInfo> = new Map();
 
-      -1, -1, 0.0,
-      1, 1, 0.0,
-      -1, 1, 0.0,
+  const createRectBuffer = () => {
+    const verts = [
+      -1, -1, 0,
+       1, -1, 0,
+       1,  1, 0,
+
+      -1, -1, 0,
+       1,  1, 0,
+      -1,  1, 0,
     ];
     const buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STATIC_DRAW);
 
-    const position = gl.getAttribLocation(program, "positionModel"); // get the index of position attribute
+    buffers.set("rect", {buffer: buffer!, itemCount: 6, itemSize: 3});
+  }
 
-    gl.vertexAttribPointer(position, 3, gl.FLOAT, false, 0, 0); // bind it to the current buffer (^^ vertex buffer)
-    gl.enableVertexAttribArray(position);
-
-    const texCoordData = [
-      0.0, 0.0,
-      1.0, 0.0,
-      1.0, 1.0,
-
-      0.0, 0.0,
-      1.0, 1.0,
-      0.0, 1.0,
-    ];
-    const tbuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, tbuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoordData), gl.STATIC_DRAW);
+  const createCircleBuffer = () => {
+    const verts = [];
+    for (let i = 0; i < 256; i++) {
+      
+      verts.push([Math.cos(( i    / 256.0 ) * Math.PI * 2.0), Math.sin(( i    / 256.0 ) * Math.PI * 2.0), 0.0])
+      verts.push([Math.cos(((i+1) / 256.0 ) * Math.PI * 2.0), Math.sin(((i+1) / 256.0 ) * Math.PI * 2.0), 0.0])
+      verts.push([0.0, 0.0, 0.0]);
+    }
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    const arr =  new Float32Array(verts.flatMap(v => v));
     
-    const texCoord = gl.getAttribLocation(program, "coord");
-    gl.vertexAttribPointer(texCoord, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(texCoord);
+    gl.bufferData(gl.ARRAY_BUFFER, arr, gl.STATIC_DRAW);
+
+    buffers.set("circle", {buffer: buffer!, itemCount:  256 * 3, itemSize: 3});
+  }
+
+  const createBuffers = () => {
+    createRectBuffer();
+    createCircleBuffer();
+  }
+
+  
+  const initGl = (program: WebGLProgram) => {
+    createBuffers();
+
+    const position = gl.getAttribLocation(program, "positionModel");
+    gl.enableVertexAttribArray(position);
+    
+    // const texCoordData = [
+    //   0.0, 0.0,
+    //   1.0, 0.0,
+    //   1.0, 1.0,
+
+    //   0.0, 0.0,
+    //   1.0, 1.0,
+    //   0.0, 1.0,
+    // ];
+    // const tbuffer = gl.createBuffer();
+    // gl.bindBuffer(gl.ARRAY_BUFFER, tbuffer);
+    // gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoordData), gl.STATIC_DRAW);
+    
+    // const texCoord = gl.getAttribLocation(program, "coord");
+    // gl.vertexAttribPointer(texCoord, 2, gl.FLOAT, false, 0, 0);
+    // gl.enableVertexAttribArray(texCoord);
 
 
-    const mainTexture = gl.getUniformLocation(program, "mainTexture");
-    gl.uniform1i(mainTexture, 0);
+    // const visibilityTexture = gl.getUniformLocation(program, "visibilityTexture");
+    // gl.uniform1i(visibilityTexture, 1);
 
-    const visibilityTexture = gl.getUniformLocation(program, "visibilityTexture");
-    gl.uniform1i(visibilityTexture, 1);
 
   }
 
@@ -110,8 +144,6 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
     const uniform = gl.getUniformLocation(program, name);
     gl.uniform2fv(uniform, pos);
   }
-
-
 
   const copyGameState = () => {
     setUniform(gamestate.player.pos, "playerPositionWorld");
@@ -129,47 +161,106 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
     const modelMatrix = gl.getUniformLocation(program, "modelMatrix");
     gl.uniformMatrix3fv(modelMatrix, false, matrix);
   }
-  
-  const drawBackground = (mainCanvas: HTMLCanvasElement, visibilityCanvas: HTMLCanvasElement) => {
-    setModelMatrix(mat3.invert(
+
+  const drawBuffer = (buffer: BufferInfo, modelMatrix: mat3, color: vec4) => {
+    setModelMatrix(modelMatrix);
+
+    const colorUniform = gl.getUniformLocation(program, "color");
+    gl.uniform4fv(colorUniform, color);
+
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer.buffer);
+
+    const position = gl.getAttribLocation(program, "positionModel");
+    gl.vertexAttribPointer(position, 3, gl.FLOAT, false, 0, 0);
+        
+    gl.drawArrays(gl.TRIANGLES, 0, buffer.itemCount);
+
+    setModelMatrix(mat3.create());   
+  }
+
+
+  const drawBackground = () => {
+    const buffer = buffers.get("rect")!;
+
+    const modelMatrix = mat3.invert(
       mat3.create(), 
       mat3.multiply(
         mat3.create(), canvasHelper.view2ndcMatrix(), canvasHelper.world2viewMatrix())
-      )
-    );
+      );
+    
+    const color = gl.getUniformLocation(program, "color");
+    gl.uniform4fv(color, [1.0, 1.0, 1.0, 1.0]);
 
-    if (initializeTextures) {
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, mainTexture);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, mainCanvas);
-
-      gl.activeTexture(gl.TEXTURE1);
-      gl.bindTexture(gl.TEXTURE_2D, visibilityTexture);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, visibilityCanvas);
-
-      initializeTextures = false;
-    } else {
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, mainTexture);
-      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, canvasHelper.width(), canvasHelper.height(), gl.RGBA, gl.UNSIGNED_BYTE, mainCanvas);
-
-      gl.activeTexture(gl.TEXTURE1);
-      gl.bindTexture(gl.TEXTURE_2D, visibilityTexture);
-      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, canvasHelper.width(), canvasHelper.height(),  gl.RGBA, gl.UNSIGNED_BYTE, visibilityCanvas);
-    }
-
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-    setModelMatrix(mat3.create());
+    
+    drawBuffer(buffer, modelMatrix, vec4.fromValues(1.0, 1.0, 1.0, 1.0));
   }
 
-  const drawScene = (mainCanvas: HTMLCanvasElement, visibilityCanvas: HTMLCanvasElement) => {
+  const drawCircle = (radius: number, pos: vec2, color: vec4) => {
+    const modelMatrix = mat3.create();
+    mat3.translate(modelMatrix, modelMatrix, pos);
+    mat3.scale(modelMatrix, modelMatrix, vec2.fromValues(radius, radius));
+    const buffer = buffers.get("circle")!;
+    drawBuffer(buffer, modelMatrix, color);
+  }
+
+  const drawRect = (width: number, height: number, pos: vec2, color: vec4) => {
+    const modelMatrix = mat3.create();
+    mat3.translate(modelMatrix, modelMatrix, pos);
+    mat3.scale(modelMatrix, modelMatrix, vec2.fromValues(width * 0.5, height * 0.5));
+    const buffer = buffers.get("rect")!;
+    drawBuffer(buffer, modelMatrix, color);
+  }
+
+  const drawShape = (model: Model, pos: vec2, color: vec4) => {
+    if (model.kind === "rect") {
+      const shape = model.shape as Rect;
+      drawRect(shape.width, shape.height, pos, color);
+    } else if (model.kind === "circle") {
+      const shape = model.shape as Circle;
+      drawCircle(shape.radius, pos, color);
+    }
+  }
+
+  const drawStaticObjects = () => {
+    const color = vec4.fromValues(0.0, 0.0, 0.0, 1.0);
+    
+    gamestate.scene.staticObjects.forEach(so => {
+      drawShape(so.model, so.pos, color);
+    });
+  }
+
+  const drawDynamicObjects = () => {
+    const color = vec4.fromValues(0.0, 0.0, 1.0, 1.0);
+
+    gamestate.scene.dynamicObjects.forEach(so => {
+      drawShape(so.model, so.pos, color);
+    });
+  }
+
+  const drawLights = () => {
+    drawCircle(0.2, gamestate.scene.light, vec4.fromValues(0.1, 0.1, 0.1, 1.0))
+  }
+
+  const drawPlayer = () =>  {
+    drawCircle(0.5, gamestate.player.pos, vec4.fromValues(1.0, 0.0, 0.0, 1.0))
+  }
+
+  const drawScene = () => {
     gl.viewport(0, 0, canvasHelper.width(), canvasHelper.height());
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     copyGameState();
 
-    drawBackground(mainCanvas, visibilityCanvas);
+    drawBackground();
+
+    drawStaticObjects();
+
+    drawDynamicObjects();
+
+    drawLights();
+
+    drawPlayer();
   }
 
   const initTexture = () => {
@@ -183,10 +274,8 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
     return texture;
   };
   
-  let mainTexture = initTexture();
   let visibilityTexture = initTexture();
   let initializeTextures = true;
-
 
   const program = initProgram()!;
   if (!program) {
@@ -201,9 +290,9 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
     getContext: canvasHelper.getWebGLContext,
     width: canvasHelper.width,
     height: canvasHelper.height,
-    draw: (mainCanvas: HTMLCanvasElement, visibilityCanvas: HTMLCanvasElement) => {
+    draw: () => {
       
-      drawScene(mainCanvas, visibilityCanvas);
+      drawScene();
 
     }
   }

@@ -30,14 +30,12 @@ export const vertexShaderSource = `#version 300 es
   /////////////////////
   precision mediump float;
 
-  uniform sampler2D mainTexture;
-  uniform sampler2D visibilityTexture;
-  
   in vec2 texCoord;
   in vec2 posWorld;
   
   uniform vec2 playerPositionWorld;
   uniform vec2 lightPositionWorld;
+  uniform vec4 color;
 
   out vec4 fragmentColor;
 
@@ -58,18 +56,20 @@ export const vertexShaderSource = `#version 300 es
     const float gamma = 2.2;
   
     const float exposure = 1.0;
+    
     // Exposure tone mapping
     vec3 mapped = vec3(1.0) - exp(-hdrColor * exposure);
+
     // Gamma correction 
     return pow(mapped, vec3(1.0 / gamma));
   }
 
 
   void main(void) {
-    vec4 visibility = texture(visibilityTexture, texCoord);
-    vec4 worldColor = texture(mainTexture, texCoord);
+    //vec4 visibility = texture(visibilityTexture, texCoord);
+    vec4 worldColor = color;
 
-    if (visibility.x == 1.0) {
+    //if (visibility.x == 1.0) {
 
       vec3 playerLight = getLightContribution(playerPositionWorld, posWorld, vec3(.4, .4, .4), 30.0);
       
@@ -80,9 +80,9 @@ export const vertexShaderSource = `#version 300 es
       fragmentColor = worldColor * vec4(toneMap(playerLight + lightLight + ambientLight) , 1.0);
 
       //fragmentColor = worldColor * ambientLight;
-     } else {
-       fragmentColor = worldColor * vec4(0.1, 0.1, 0.1, 1.0);
-     }
+     //} else {
+      // fragmentColor = worldColor;
+     //}
 
     //
   }

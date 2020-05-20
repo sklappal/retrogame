@@ -1,5 +1,4 @@
 import { vec2 } from 'gl-matrix'
-import { Config } from '../game/gamestate';
 import { Model, Circle, Rect } from '../models/models';
 import { CanvasHelper } from './canvashelper';
 

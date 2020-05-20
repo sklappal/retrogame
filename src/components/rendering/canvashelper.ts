@@ -4,7 +4,7 @@ import { Camera } from "../game/gamestate";
 
 export interface CanvasHelper {
   getContext(): CanvasRenderingContext2D
-  getWebGLContext(): WebGLRenderingContext
+  getWebGLContext(): WebGL2RenderingContext
   width(): number
   height(): number
   canvas2world(vec: vec2): vec2
@@ -28,7 +28,7 @@ export const getCanvasHelper = (canvas: HTMLCanvasElement, camera: Camera) => {
 
   const getContext: () => CanvasRenderingContext2D = () => getCanvas().getContext("2d")!;
 
-  const getWebGLContext: () => WebGLRenderingContext = () => getCanvas().getContext("webgl2")!;
+  const getWebGLContext: () => WebGL2RenderingContext = () => getCanvas().getContext("webgl2")!;
 
   const getCanvas = () => canvas;
   

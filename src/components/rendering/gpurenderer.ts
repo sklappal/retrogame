@@ -5,7 +5,7 @@ import { vertexShaderSource, fragmentShaderSource } from './shaders';
 
 
 export interface GpuRenderer {
-  getContext(): WebGLRenderingContext;
+  getContext(): WebGL2RenderingContext;
   width(): number;
   height(): number;
 
@@ -75,7 +75,7 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STATIC_DRAW);
 
-    const position = gl.getAttribLocation(program, "positionNdc"); // get the index of position attribute
+    const position = gl.getAttribLocation(program, "positionModel"); // get the index of position attribute
 
     gl.vertexAttribPointer(position, 3, gl.FLOAT, false, 0, 0); // bind it to the current buffer (^^ vertex buffer)
     gl.enableVertexAttribArray(position);
@@ -124,7 +124,54 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
     const projectionMatrix = gl.getUniformLocation(program, "projectionMatrix");
     gl.uniformMatrix3fv(projectionMatrix, false, canvasHelper.view2ndcMatrix());
   }
+
+  const setModelMatrix = (matrix: mat3) => {
+    const modelMatrix = gl.getUniformLocation(program, "modelMatrix");
+    gl.uniformMatrix3fv(modelMatrix, false, matrix);
+  }
   
+  const drawBackground = (mainCanvas: HTMLCanvasElement, visibilityCanvas: HTMLCanvasElement) => {
+    setModelMatrix(mat3.invert(
+      mat3.create(), 
+      mat3.multiply(
+        mat3.create(), canvasHelper.view2ndcMatrix(), canvasHelper.world2viewMatrix())
+      )
+    );
+
+    if (initializeTextures) {
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, mainTexture);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, mainCanvas);
+
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, visibilityTexture);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, visibilityCanvas);
+
+      initializeTextures = false;
+    } else {
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, mainTexture);
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, canvasHelper.width(), canvasHelper.height(), gl.RGBA, gl.UNSIGNED_BYTE, mainCanvas);
+
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, visibilityTexture);
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, canvasHelper.width(), canvasHelper.height(),  gl.RGBA, gl.UNSIGNED_BYTE, visibilityCanvas);
+    }
+
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+    setModelMatrix(mat3.create());
+  }
+
+  const drawScene = (mainCanvas: HTMLCanvasElement, visibilityCanvas: HTMLCanvasElement) => {
+    gl.viewport(0, 0, canvasHelper.width(), canvasHelper.height());
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    copyGameState();
+
+    drawBackground(mainCanvas, visibilityCanvas);
+  }
+
   const initTexture = () => {
     const texture = gl.createTexture();
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
@@ -140,32 +187,6 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
   let visibilityTexture = initTexture();
   let initializeTextures = true;
 
-  const draw = (mainCanvas: HTMLCanvasElement, visibilityCanvas: HTMLCanvasElement) => {
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    
-    if (initializeTextures) {
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, mainTexture);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, mainCanvas);
-
-      gl.activeTexture(gl.TEXTURE1);
-      gl.bindTexture(gl.TEXTURE_2D, visibilityTexture);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, visibilityCanvas);
-
-      initializeTextures = false;
-    } else {
-      gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, mainTexture);
-      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, mainCanvas);
-
-      gl.activeTexture(gl.TEXTURE1);
-      gl.bindTexture(gl.TEXTURE_2D, visibilityTexture);
-      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, visibilityCanvas);
-    }
-
-
-    gl.drawArrays(gl.TRIANGLES, 0, 6);
-  }
 
   const program = initProgram()!;
   if (!program) {
@@ -181,17 +202,9 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
     width: canvasHelper.width,
     height: canvasHelper.height,
     draw: (mainCanvas: HTMLCanvasElement, visibilityCanvas: HTMLCanvasElement) => {
-
-
-      gl.viewport(0, 0, canvasHelper.width(), canvasHelper.height());
       
-      const aspectRatio =  canvasHelper.width() / canvasHelper.height();
-      const aspect = gl.getUniformLocation(program, "aspect");
-      gl.uniform1f(aspect, aspectRatio);
+      drawScene(mainCanvas, visibilityCanvas);
 
-      copyGameState();
-
-      draw(mainCanvas, visibilityCanvas);
     }
   }
 }

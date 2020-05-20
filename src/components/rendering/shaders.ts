@@ -5,21 +5,21 @@ export const vertexShaderSource = `#version 300 es
   
   uniform float aspect;
 
+  uniform mat3 modelMatrix; // model coordinates to world coordinates
   uniform mat3 viewMatrix; // world coordinates to view
   uniform mat3 projectionMatrix; // view coordinates to NDC
   
-  in vec3 positionNdc; // [-1, 1] x [-1, 1]
+  in vec3 positionModel;
   in vec2 coord; // texture coordinates: [0, 1.0]
   
   out vec2 texCoord;
-  out vec2 posProjected; // [-aspect, aspect] x [-1, 1]
   out vec2 posWorld;
 
   void main(void) {
-    gl_Position = vec4(positionNdc, 1.0);
+    vec3 positionWorld = modelMatrix * vec3(positionModel.xy, 1.0);
+    posWorld = positionWorld.xy;
+    gl_Position = vec4((projectionMatrix * viewMatrix) * positionWorld, 1.0);
     texCoord = coord;
-    mat3 view2projected = projectionMatrix * viewMatrix;
-    posWorld = ( inverse(view2projected) * vec3(positionNdc.xy, 1.0) ).xy;
   }
 
   ///////////////////`;
@@ -69,20 +69,20 @@ export const vertexShaderSource = `#version 300 es
     vec4 visibility = texture(visibilityTexture, texCoord);
     vec4 worldColor = texture(mainTexture, texCoord);
 
-   // if (visibility.x == 1.0) {
+    if (visibility.x == 1.0) {
 
-      vec3 playerLight = getLightContribution(playerPositionWorld, posWorld, vec3(0.6, .0, 0.0), 50.0);
+      vec3 playerLight = getLightContribution(playerPositionWorld, posWorld, vec3(.4, .4, .4), 30.0);
       
-      vec3 lightLight = getLightContribution(lightPositionWorld, posWorld, vec3(.0, .2, 0.0), 20.0);
+      vec3 lightLight = getLightContribution(lightPositionWorld, posWorld, vec3(.0, .5, 0.0), 20.0);
 
-      vec3 ambientLight = vec3(0.0, 0.0, 0.1);
+      vec3 ambientLight = vec3(0.0, 0.0, 0.05);
       
       fragmentColor = worldColor * vec4(toneMap(playerLight + lightLight + ambientLight) , 1.0);
 
       //fragmentColor = worldColor * ambientLight;
-    // } else {
-    //   fragmentColor = vec4(0.0, 0.0, 0.0, 1.0);
-    // }
+     } else {
+       fragmentColor = worldColor * vec4(0.1, 0.1, 0.1, 1.0);
+     }
 
     //
   }

@@ -10,19 +10,22 @@ interface Segment {
   toCartesian: vec2
 }
 
-const playerElementRaysRect = (rectPos: vec2, rect: Rect, playerPos: vec2): vec2[] => {
-  const corners: vec2[] = [
-    [rectPos[0] - rect.width * 0.5, rectPos[1] - rect.height * 0.5], 
-    [rectPos[0] + rect.width * 0.5, rectPos[1] - rect.height * 0.5],
-    [rectPos[0] - rect.width * 0.5, rectPos[1] + rect.height * 0.5],
-    [rectPos[0] + rect.width * 0.5, rectPos[1] + rect.height * 0.5]
-  ];
+const M_2PI = 2.0*Math.PI;
 
-  const rays: vec2[] = corners.map(c => vec2.sub(vec2.create(), c, playerPos));
+const playerElementRaysVectorBuffer = [vec2.create(), vec2.create(), vec2.create(), vec2.create()]
+
+const playerElementRaysRect = (rectPos: vec2, rect: Rect, playerPos: vec2): vec2[] => {
+
+  vec2.set(playerElementRaysVectorBuffer[0], rectPos[0] - rect.width * 0.5 - playerPos[0], rectPos[1] - rect.height * 0.5 - playerPos[1]) 
+  vec2.set(playerElementRaysVectorBuffer[1], rectPos[0] + rect.width * 0.5 - playerPos[0], rectPos[1] - rect.height * 0.5 - playerPos[1])
+  vec2.set(playerElementRaysVectorBuffer[2], rectPos[0] - rect.width * 0.5 - playerPos[0], rectPos[1] + rect.height * 0.5 - playerPos[1])
+  vec2.set(playerElementRaysVectorBuffer[3], rectPos[0] + rect.width * 0.5 - playerPos[0], rectPos[1] + rect.height * 0.5 - playerPos[1])
+
+  const rays = playerElementRaysVectorBuffer;
 
   let maxAngle = 0.0;
-  let ray1: vec2 = [0.0, 0.0];
-  let ray2: vec2 = [0.0, 0.0];
+  let ray1: vec2;
+  let ray2: vec2;
   for (let i = 0; i < rays.length-1; i++) {
     for (let j = 1; j < rays.length; j++) {
       if (i !== j) {
@@ -36,12 +39,12 @@ const playerElementRaysRect = (rectPos: vec2, rect: Rect, playerPos: vec2): vec2
     }
   }
 
-  return [ray1, ray2];
+  return [vec2.clone(ray1!), vec2.clone(ray2!)];
 }
 
 const playerElementRaysCircle = (circlePos: vec2, circle: Circle, playerPos: vec2): vec2[] => {
 
-  const circlePlayerRay = vec2.sub(vec2.create(), playerPos, circlePos);
+  const circlePlayerRay = vec2.sub(playerElementRaysVectorBuffer[0], playerPos, circlePos);
 
   const radius = circle.radius;
 
@@ -53,12 +56,14 @@ const playerElementRaysCircle = (circlePos: vec2, circle: Circle, playerPos: vec
 
   const cosTheta = radius / hypotenuse;
 
-  const rotated1 = vec2.fromValues(
+  const rotated1 = vec2.set(
+    playerElementRaysVectorBuffer[1],
     circlePlayerRay[0] * cosTheta - circlePlayerRay[1] * sinTheta,
     circlePlayerRay[0] * sinTheta + circlePlayerRay[1] * cosTheta
   )
   
-  const rotated2 = vec2.fromValues(
+  const rotated2 = vec2.set(
+    playerElementRaysVectorBuffer[2],
     circlePlayerRay[0] * cosTheta + circlePlayerRay[1] * sinTheta,
     - circlePlayerRay[0] * sinTheta + circlePlayerRay[1] * cosTheta
   )
@@ -67,8 +72,8 @@ const playerElementRaysCircle = (circlePos: vec2, circle: Circle, playerPos: vec
 
   vec2.scale(rotated2, rotated2, radius / hypotenuse)
 
-  const corner1 = vec2.add(vec2.create(), rotated1, circlePos)
-  const corner2 = vec2.add(vec2.create(), rotated2, circlePos)
+  const corner1 = vec2.add(rotated1, rotated1, circlePos)
+  const corner2 = vec2.add(rotated2, rotated2, circlePos)
 
   return [vec2.sub(vec2.create(), corner1, playerPos), vec2.sub(vec2.create(), corner2, playerPos)];
 }
@@ -92,64 +97,71 @@ const toPolar: (vec: vec2) => vec2 = (vec) => {
 const angleFromT1toT2 = (t1: vec2, t2: vec2) => {
   const diff = t2[1]-t1[1];
   if (diff < 0)
-    return diff + Math.PI * 2.0
+    return diff + M_2PI
 
   return diff
 }
 
-export const rayLineIntersection = (ray: vec2, point1: vec2, point2: vec2): intersection => {
-    const v1 = vec2.scale(vec2.create(), point1, -1.0)
-    const v2 = vec2.sub(vec2.create(), point2, point1)
-    const v3 = vec2.fromValues(-ray[1], ray[0])
-
-    const dot = vec2.dot(v2, v3);
-    if (Math.abs(dot) < 1e-6)
-      return {intersect: false}
-
-    const t1 = ((v2[0]*v1[1]) - (v2[1]*v1[0])) / dot;
-    const t2 = (vec2.dot(v1, v3)) / dot;
-
-    if (t1 >= 0.0 && (t2 >= -0.001 && t2 <= 1.001))
-        return {intersect: true, distance: t1};
-
-    return {intersect: false}
-}
-
 type intersection = { intersect: false} | {intersect: true, distance: number}
 
-export const raySegmentIntersection = (rayAngle: number, segment: Segment): intersection  => {
+const angleInSegment = (rayAngle: number, segment: Segment) => {
+  //const angle = 0.0;
+  const start = normalizeTo2pi(segment.from[1] - rayAngle)
+  if (start > 0.0) {
+    return false;
+  }
 
-    const angle = 0.0;
-    const start = normalizeTo2pi(segment.from[1] - rayAngle)
-    let stop =  normalizeTo2pi(segment.to[1] - rayAngle)
-    if (stop < start) {
-      stop += 2.0 * Math.PI
-    }
-    
-    if (angle < start || angle > stop) {
-      return {intersect: false}
+  let stop = normalizeTo2pi(segment.to[1] - rayAngle)
+  if (stop < start) {
+    return false;
+  }
+  
+  if (stop < 0.0) {
+    return false;
+  }
+
+  return true;
+}
+
+// to avoid realloc/GC
+const rayLineIntersectionBuffer = [vec2.create(), vec2.create(), vec2.create()];
+
+export const raySegmentIntersection = (rayAngle: number, sina: number, cosa: number, segment: Segment): intersection  => {
+    if (!angleInSegment(rayAngle, segment)) {
+      return { intersect: false};
     }
 
-    const ray = vec2.fromValues(Math.cos(rayAngle), Math.sin(rayAngle));
+    if (angleFromT1toT2(segment.from, segment.to) < 1e-4) {
+      return {intersect: true, distance: segment.from[0] * 0.5 + segment.to[0] * 0.5}
+    }
+
+    // This is normal to the ray, but the rayLineIntersection actually uses that.
+    const ray = rayLineIntersectionBuffer[2];
+    ray[0] = -sina;
+    ray[1] = cosa;
     
     const point1 = segment.fromCartesian;
     const point2 = segment.toCartesian;
     
-    return rayLineIntersection(ray, point1, point2);
+    const v1 = vec2.scale(rayLineIntersectionBuffer[0], point1, -1.0)
+    const v2 = vec2.sub(rayLineIntersectionBuffer[1], point2, point1)
+
+    const dot = vec2.dot(v2, ray);
+    const distance = ((v2[0]*v1[1]) - (v2[1]*v1[0])) / dot;
+    
+    return {intersect: true, distance: distance}
 }
 
-const findNearestIntersectingSegment = (rayAngle: number, segments: Iterable<Segment>) => {
+const findNearestIntersectingSegment = (rayAngle: number, sina: number, cosa: number, segments: Iterable<Segment>) => {
   let min: number = 10000; // very large number, almost infinite
-  let minSegment = null;
   for (const segment of segments) {
-    const i = raySegmentIntersection(rayAngle, segment);
+    const i = raySegmentIntersection(rayAngle, sina, cosa, segment);
     if (i.intersect && i.distance < min) {
       min = i.distance;
-      minSegment = segment;
     }
   }
 
-  return {segment: minSegment, distance: min};
+  return min;
 }
 
 export const isPointBehindLine = (p1: vec2, p2: vec2, p: vec2) => {
@@ -169,13 +181,6 @@ const distanceToSegmentSquared = (p1: vec2, p2: vec2) => {
 
 export const toCartesian = (v: vec2) => vec2.fromValues(v[0] * Math.cos(v[1]), v[0] * Math.sin(v[1]));
 
-const isPointBehindSegment = (segment: Segment, polar: vec2) => {
-  const p1 = segment.fromCartesian;
-  const p2 = segment.toCartesian;
-
-  return isPointBehindLine(p1, p2, toCartesian(polar));
-}
-
 const isSegmentBehindOther = (thisSegment: Segment, otherSegment: Segment) => {
   const p1 = otherSegment.fromCartesian;
   const p2 = otherSegment.toCartesian;
@@ -185,9 +190,9 @@ const isSegmentBehindOther = (thisSegment: Segment, otherSegment: Segment) => {
 
 const normalizeTo2pi = (angle: number) => {
   if (angle <= -Math.PI)
-    return angle + 2.0 * Math.PI
+    return angle + M_2PI;
   if (angle >= Math.PI)
-    return angle - 2.0 * Math.PI
+    return angle - M_2PI;
   return angle
 }
 
@@ -197,9 +202,13 @@ export const isSegmentOccluded = (thisSegment: Segment, otherSegment: Segment) =
   const stopAngle = angleFromT1toT2(otherSegment.from, otherSegment.to)
   
   const thisStart = normalizeTo2pi(thisSegment.from[1] - otherSegment.from[1])
+  if (thisStart < startAngle) {
+    return false;
+  }
+
   let thisStop =  normalizeTo2pi(thisSegment.to[1] - otherSegment.from[1])
   if (thisStop < thisStart) {
-    thisStop += 2.0 * Math.PI
+    thisStop += M_2PI;
   }
   
   if (thisStart < startAngle || thisStop > stopAngle) {
@@ -235,34 +244,18 @@ const purgeOccludedSegments = (segments : ReadonlyArray<Segment>) => {
 
 }
 
-const sp = (segment: Segment) => {
-  return {startingPoint: true, point: segment.from, segment: segment}
-}
 
-const ep = (segment: Segment) => {
-  return {startingPoint: false, point: segment.to, segment: segment}
-}
+let sinBuffer: number[] = [];
+let cosBuffer: number[] = [];
 
-const epsilonEqual = (v1: vec2, v2: vec2) => {
-  return Math.abs(v1[0]-v2[0]) < 1e-6 && Math.abs(v1[1]-v2[1]) < 1e-6;
-}
-
-const intersectionsAlongRay = (angle: number, segments: ReadonlyArray<Segment>) => {
-  return segments
-    .map(segment => {return {...raySegmentIntersection(angle, segment), segment: segment}})
-    .filter(intersect => intersect.intersect)
-    .map(intersect => intersect as {intersect: true, distance: number, segment: Segment})
-    .sort((a, b) => a.distance - b.distance)
-}
-
-export const findVisibleRegion = (pos: vec2, radius:number, items: ReadonlyArray<StaticObject>) => {
-  const playerPos = pos;
-  const elementSegments = items.map(element => findElementSegments(element.pos, element.model, playerPos));
+export const findVisibilityStrip = (pos: vec2, radius:number, items: ReadonlyArray<StaticObject>, resultBuffer: Uint8Array) => {
+  const elementSegments = items.map(element => findElementSegments(element.pos, element.model, pos));
 
   const radiusSquared = radius*radius;
   elementSegments.filter(el => distanceToSegmentSquared(el[0], el[1]) < radiusSquared)
 
-  const wallDistance = 300.0;
+  //const wallDistance = radiusSquared + radius;
+  const wallDistance = 1000.0;
 
   elementSegments.push([[-wallDistance, -wallDistance], [wallDistance, -wallDistance]])
   elementSegments.push([[wallDistance, -wallDistance], [wallDistance, wallDistance]])
@@ -284,91 +277,24 @@ export const findVisibleRegion = (pos: vec2, radius:number, items: ReadonlyArray
   })
 
   const segments = purgeOccludedSegments(segmentsNonPurged);
+ 
+  const getAngle = (i:number) => ((i+0.5) / resultBuffer.length) * M_2PI - Math.PI;
 
-  const allPoints = segments
-    .flatMap(segment => [sp(segment), ep(segment)])
-    .sort((p1, p2) => p1.point[1] - p2.point[1])
-
-
-  let startIndex = 0;  
-  for (let i = 0; i < allPoints.length; i++) {
-    const currentPoint = allPoints[i];
-    if (currentPoint.startingPoint) {
-      let hidden = false;
-      segments.forEach(segment => {
-        if (isPointBehindSegment(segment, currentPoint.point)) {
-          hidden = true;
-        }
-      })
-      if (!hidden) {
-        startIndex = i;
-        break;
-      }
+  if (sinBuffer.length !== resultBuffer.length) {
+    sinBuffer = [];
+    cosBuffer = [];
+    for (let i = 0; i < resultBuffer.length; i++) {
+      const angle = getAngle(i)
+      sinBuffer.push(Math.sin(angle))
+      cosBuffer.push(Math.cos(angle))
     }
   }
 
-
-  const points: vec2[] = []
-  const startPoint = allPoints[startIndex];
-   // visible and a starting point. Yes.
-  let currentSegment = startPoint.segment;
-
-  const intersections = intersectionsAlongRay(startPoint.point[1], segments)
-
-  const open = new Set<Segment>();
-  intersections.forEach(isec => {
-    open.add(isec.segment)
-  });
-  
-
-  let triangleStart = startPoint.point;
-
-  for (let i = 1; i < allPoints.length*2; i++) {
-    const currentPoint = allPoints[(startIndex + i) % allPoints.length];
-    if (!currentPoint.startingPoint) {
-      open.delete(currentPoint.segment)
-    } else {
-      open.add(currentPoint.segment);
-    }
-
-    segments.forEach(segment => {
-      if (epsilonEqual(segment.from, currentPoint.point)) {
-        open.add(segment);
-      }
-      if (epsilonEqual(segment.to, currentPoint.point)) {
-        open.delete(segment);
-      }
-    })
-
-    const nearestSegment = findNearestIntersectingSegment(currentPoint.point[1], open);
-    if (nearestSegment.segment === null) {
-      console.log("no intersection really sad")
-      continue;
-    }
-      
-    if (nearestSegment.segment !== currentSegment) {
-      points.push(triangleStart);
-      const d1 = raySegmentIntersection(currentPoint.point[1], currentSegment)
-      if (d1.intersect) {
-        points.push([d1.distance, currentPoint.point[1]])
-      } else {
-        if (!currentPoint.startingPoint) {
-          console.log("no intersection but current point finishes segment...... so...")
-        }
-        else {
-          console.log("no intersection sad panda")
-        }
-      }
-      triangleStart = [nearestSegment.distance, currentPoint.point[1]]
-      currentSegment = nearestSegment.segment;
-      if (i > allPoints.length) {
-        break;
-      }
-    }
+  for (let i = 0; i < resultBuffer.length; i++) {
+    const angle = getAngle(i)
+    const isec = findNearestIntersectingSegment(angle, sinBuffer[i], cosBuffer[i], segments);
+    resultBuffer[i] = Math.min(255, Math.round(isec * 2.0));
   }
 
-  return points
-    .map(toCartesian)
-    .map(p => vec2.add(vec2.create(), p, playerPos))
+  return resultBuffer;
 }
-

@@ -105,6 +105,9 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState) =
     handleCamera();
     handlePlayerMovement();
     handleDynamicObjects();
+
+    gamestate.scene.light.radius += Math.sin(gamestate.gametime)*0.1;
+    gamestate.scene.light.pos[1] += Math.cos(2*gamestate.gametime);
   }
 
   return {

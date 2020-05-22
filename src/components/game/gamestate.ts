@@ -26,6 +26,7 @@ export interface ControlState {
 export interface Player  {
   pos: vec2
   velocity: vec2
+  lightradius: number
   maxSpeed: number
   acceleration: number
   model: Model
@@ -55,7 +56,10 @@ export interface DynamicObject extends StaticObject {
 }
 
 export interface Scene {
-  light: vec2,
+  light: {
+    pos:vec2
+    radius:number
+  }
   staticObjects: ReadonlyArray<StaticObject>
   dynamicObjects: Array<DynamicObject>
   isInsideObject: (pos: vec2) => boolean
@@ -73,6 +77,7 @@ export interface GameState {
 
 const player = {
   pos: vec2.fromValues(0.0, 0.0),
+  lightradius: 35.0,
   velocity: vec2.fromValues(0.0, 0.0),
   model: circle(1.0, "red"),
   maxSpeed: 0.2,
@@ -97,7 +102,7 @@ export const createDynamicObject  = (thisPos: vec2, velocity: vec2, model: Model
 
 export const getGameState = () : GameState => {
   var items: StaticObject[] = []
-  const count = 10
+  const count = 6
   const width = 3
   const margin = 1
   for (let i = 0; i < count; i++) {
@@ -125,7 +130,7 @@ export const getGameState = () : GameState => {
       fieldOfView: 100.0
     },
     scene: {
-      light: vec2.fromValues(10.0, 10.0),
+      light: {pos: vec2.fromValues(10.0, 10.0), radius: 30.0},
       staticObjects: items,
       dynamicObjects: [],
       isInsideObject: (pos: vec2) => items.some(item => item.isInside(pos)),

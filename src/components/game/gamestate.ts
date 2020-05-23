@@ -36,8 +36,6 @@ export interface Player  {
 export interface Camera   {
   pos: vec2
   velocity: vec2
-
-  // number of world units visible on the smaller dimension of camera
   fieldOfView: number
 }
 
@@ -102,7 +100,7 @@ export const createDynamicObject  = (thisPos: vec2, velocity: vec2, model: Model
 
 export const getGameState = () : GameState => {
   var items: StaticObject[] = []
-  const count = 6
+  const count = 10
   const width = 3
   const margin = 1
   for (let i = 0; i < count; i++) {
@@ -127,7 +125,7 @@ export const getGameState = () : GameState => {
     camera: {
       pos: vec2.fromValues(0.0, 0.0),
       velocity: vec2.fromValues(0.0, 0.0),
-      fieldOfView: 100.0
+      fieldOfView: 30.0
     },
     scene: {
       light: {pos: vec2.fromValues(10.0, 10.0), radius: 30.0},

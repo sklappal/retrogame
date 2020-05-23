@@ -68,19 +68,36 @@ export const vertexShaderSource = `#version 300 es
     return pow(mapped, vec3(1.0 / gamma));
   }
 
-  float getShadowMultiplier(vec2 lightPos, vec2 currentPos, sampler2D sampler, float index) {
-    vec2 dir = (currentPos-lightPos);
-    float angle = atan(dir.y, dir.x);
-    float textureIndex = ((angle + M_PI) / (2.0 * M_PI));
-    vec4 dist = texture(sampler, vec2(textureIndex, 0.75 - index * 0.5));
+  float sampleTextureAtAngle(float angle, sampler2D sampler, float index) {
+    float samplingLocation = (angle + M_PI) / (2.0 * M_PI);
+    return texture(sampler, vec2(samplingLocation, 0.75 - index * 0.5)).r;
+  }
 
-    //return dist.r;
-    //return (textureIndex / 512.0);
-   // return 1.0;
-    if (length(dir) < dist.r*128.0) {
-      return 1.0;
+  float getShadowMultiplierForLightRay(vec2 lightRay, vec2 currentPos, sampler2D sampler, float index) {
+    float lightDistance = length(lightRay);
+    float angle = atan(lightRay.y, lightRay.x);
+    float delta = (M_PI / 1024.0) * 0.5;
+
+    float sum = 0.0;
+    for (int i = 0; i < 9; i++) {
+      sum += sampleTextureAtAngle(angle+(float(i)-4.0)*delta, sampler, index) > lightDistance ? 1.0 : 0.0;
     }
-    return 0.0;
+
+    return sum / 9.0;
+  }
+
+  float getShadowMultiplier(vec2 lightPos, vec2 currentPos, sampler2D sampler, float index) {
+    vec2 dir = currentPos-lightPos;
+    vec2 normal = normalize(vec2(-dir.y, dir.x));
+    return getShadowMultiplierForLightRay(dir, currentPos, sampler, index);
+
+    // even more sampling
+    // float sum = 0.0;
+    // for (int i = 0; i < 5; i++) {
+    //   vec2 dir2 =  (currentPos) - (lightPos + normal * float(i-2) * 0.1);
+    //   sum += getShadowMultiplierForLightRay(dir2, currentPos, sampler, index);
+    // }
+    // return sum/5.0;
   }
 
 
@@ -93,7 +110,7 @@ export const vertexShaderSource = `#version 300 es
     vec3 lightLight = getLightContribution(uLightPositionWorld, posWorld, vec3(.0, .5, 0.0), uLightRadius);
     float lightMultiplier = getShadowMultiplier(uLightPositionWorld, posWorld, uSampler, 1.0) * playerLightMultiplier;
 
-    vec3 ambientLight = vec3(0.001, 0.001, 0.001);
+    vec3 ambientLight = vec3(0.01, 0.01, 0.01);
     
     fragmentColor = worldColor * vec4(toneMap(playerLight * playerLightMultiplier + lightLight * lightMultiplier + ambientLight) , 1.0);
   }

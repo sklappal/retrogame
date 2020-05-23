@@ -89,17 +89,14 @@ const findElementSegments = (elementPos: vec2, elementModel: Model, playerPos :v
   throw new Error("Unknown element type");
 }
 
-const toPolar: (vec: vec2) => vec2 = (vec) => {
-  
-  return [vec2.length(vec) as number, Math.atan2(vec[1], vec[0])]
-}
+const toPolar = (vec: vec2) => vec2.fromValues(vec2.length(vec) as number, Math.atan2(vec[1], vec[0]));
 
 const angleFromT1toT2 = (t1: vec2, t2: vec2) => {
   const diff = t2[1]-t1[1];
   if (diff < 0)
-    return diff + M_2PI
+    return diff + M_2PI;
 
-  return diff
+  return diff;
 }
 
 type intersection = { intersect: false} | {intersect: true, distance: number}
@@ -131,10 +128,6 @@ export const raySegmentIntersection = (rayAngle: number, sina: number, cosa: num
       return { intersect: false};
     }
 
-    if (angleFromT1toT2(segment.from, segment.to) < 1e-4) {
-      return {intersect: true, distance: segment.from[0] * 0.5 + segment.to[0] * 0.5}
-    }
-
     // This is normal to the ray, but the rayLineIntersection actually uses that.
     const ray = rayLineIntersectionBuffer[2];
     ray[0] = -sina;
@@ -143,11 +136,11 @@ export const raySegmentIntersection = (rayAngle: number, sina: number, cosa: num
     const point1 = segment.fromCartesian;
     const point2 = segment.toCartesian;
     
-    const v1 = vec2.scale(rayLineIntersectionBuffer[0], point1, -1.0)
+    const v1 = point1;
     const v2 = vec2.sub(rayLineIntersectionBuffer[1], point2, point1)
 
     const dot = vec2.dot(v2, ray);
-    const distance = ((v2[0]*v1[1]) - (v2[1]*v1[0])) / dot;
+    const distance = ((v2[1]*v1[0]) - (v2[0]*v1[1])) / dot;
     
     return {intersect: true, distance: distance}
 }
@@ -223,7 +216,7 @@ const purgeOccludedSegments = (segments : ReadonlyArray<Segment>) => {
   for (var i = 0; i < segments.length; i++) {
     let hidden = false;
     const thisPair = segments[i]
-
+// TODO: This can further be optimized. If thisPair is hidden, it can't hide other pairs, or some other pair would hide the pair it hides etc
     for (var j = 0; j < segments.length; j++) {
       if (i !== j) {
         const otherPair = segments[j]
@@ -248,7 +241,7 @@ const purgeOccludedSegments = (segments : ReadonlyArray<Segment>) => {
 let sinBuffer: number[] = [];
 let cosBuffer: number[] = [];
 
-export const findVisibilityStrip = (pos: vec2, radius:number, items: ReadonlyArray<StaticObject>, resultBuffer: Uint8Array) => {
+export const findVisibilityStrip = (pos: vec2, radius:number, items: ReadonlyArray<StaticObject>, resultBuffer: Float32Array) => {
   const elementSegments = items.map(element => findElementSegments(element.pos, element.model, pos));
 
   const radiusSquared = radius*radius;
@@ -293,7 +286,7 @@ export const findVisibilityStrip = (pos: vec2, radius:number, items: ReadonlyArr
   for (let i = 0; i < resultBuffer.length; i++) {
     const angle = getAngle(i)
     const isec = findNearestIntersectingSegment(angle, sinBuffer[i], cosBuffer[i], segments);
-    resultBuffer[i] = Math.min(255, Math.round(isec * 2.0));
+    resultBuffer[i] =  isec;
   }
 
   return resultBuffer;

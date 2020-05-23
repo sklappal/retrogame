@@ -60,7 +60,11 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
       console.log("Shader program did not link successfully: ", linkErrLog)
       return;
     }
-
+    const ext = gl.getExtension("EXT_color_buffer_float");
+    if (!ext) {
+      console.log("sorry, can't render to floating point textures");
+      return;
+    }
     gl.useProgram(program);
 
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -275,9 +279,9 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
 
     drawPlayer();
   }
-  const width = 512;
+  const width = 1024;
   const height = 2;
-  const pixels = new Uint8Array(width*height);
+  const pixels = new Float32Array(width*height);
   const updateTexture = () => {
       findVisibilityStrip(gamestate.player.pos, gamestate.player.lightradius, gamestate.scene.staticObjects, pixels.subarray(0, width));
       findVisibilityStrip(gamestate.scene.light.pos, gamestate.scene.light.radius, gamestate.scene.staticObjects, pixels.subarray(width, 2*width));
@@ -288,7 +292,7 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
       
       const sampler = gl.getUniformLocation(program, 'uSampler');
       gl.uniform1i(sampler, 0);
-      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, width, height, gl.RED, gl.UNSIGNED_BYTE, pixels);
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, width, height, gl.RED, gl.FLOAT, pixels);
   }
 
   const initTexture = () => {
@@ -300,12 +304,10 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
     gl.uniform1i(sampler, 0);
   
     const level = 0;
-    const internalFormat = gl.R8;
-    
+    const internalFormat = gl.R32F;
     const border = 0;
     const srcFormat = gl.RED;
-    const srcType = gl.UNSIGNED_BYTE;
-    const pixels = new Uint8Array(width*height);
+    const srcType = gl.FLOAT;
     
     gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
                   width, height, border, srcFormat, srcType,
@@ -313,8 +315,8 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
 
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
     gl.activeTexture(gl.TEXTURE0)
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     gl.bindTexture(gl.TEXTURE_2D, texture);

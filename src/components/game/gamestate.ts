@@ -1,5 +1,6 @@
 import { vec2 } from 'gl-matrix'
 import { Model, rect, circle } from '../models/models'
+import { svgString } from './svg'
 
 export interface ControlState {
     mouse: {
@@ -83,7 +84,7 @@ const player = {
   aimAngle: 0.0
 }
 
-export const createObject  = (thisPos: vec2, model: Model) => {
+export const createObject = (thisPos: vec2, model: Model) => {
   return {
     pos: thisPos,
     model: model,
@@ -98,9 +99,11 @@ export const createDynamicObject  = (thisPos: vec2, velocity: vec2, model: Model
   }
 }
 
+const getAttribute = (foo: SVGRectElement, name: string) => parseFloat(foo.getAttribute(name)!)*0.5;
+
 export const getGameState = () : GameState => {
-  var items: StaticObject[] = []
-  const count = 10
+  //var items: StaticObject[] = []
+ /* const count = 10
   const width = 3
   const margin = 1
   for (let i = 0; i < count; i++) {
@@ -117,7 +120,19 @@ export const getGameState = () : GameState => {
       vec2.fromValues(Math.cos(angle) * 60.0 , Math.sin(angle) * 60.0),
       circle(10.0, "black")
     ));
-  }
+  }*/
+
+  const svg = document.createElement('svg');
+  svg.innerHTML = svgString;
+  
+  // <rect id="svg_5" height="117" width="23" y="137.450012" x="110.5" fill-opacity="null" stroke-opacity="null" stroke-width="1.5" stroke="#000" fill="#fff"/>
+  const items = Array.from(svg.getElementsByTagName('rect')).map(r => {
+    const w = getAttribute(r, "width")
+    const h = getAttribute(r, "height")
+    return createObject(
+      vec2.fromValues(getAttribute(r, "x") + w*0.5, getAttribute(r, "y") + h*0.5),
+      rect(w, h, "black") )
+  });
 
   return  {
     config: {debug: false},

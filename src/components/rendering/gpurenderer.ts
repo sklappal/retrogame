@@ -297,11 +297,7 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
 
   const initTexture = () => {
     const texture = gl.createTexture();
-    gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, texture);
-    
-    const sampler = gl.getUniformLocation(program, 'uSampler');
-    gl.uniform1i(sampler, 0);
   
     const level = 0;
     const internalFormat = gl.R32F;
@@ -317,13 +313,6 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
-    gl.activeTexture(gl.TEXTURE0)
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    
-    
-    gl.uniform1i(sampler, 0);
-    
     return texture;
   };
  

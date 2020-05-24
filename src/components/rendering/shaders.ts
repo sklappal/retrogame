@@ -70,7 +70,7 @@ export const vertexShaderSource = `#version 300 es
 
   float sampleTextureAtAngle(float angle, sampler2D sampler, float index) {
     float samplingLocation = (angle + M_PI) / (2.0 * M_PI);
-    return texture(sampler, vec2(samplingLocation, 0.75 - index * 0.5)).r;
+    return texture(sampler, vec2(samplingLocation, 0.25 + index * 0.5)).r;
   }
 
   float getShadowMultiplierForLightRay(vec2 lightRay, vec2 currentPos, sampler2D sampler, float index) {

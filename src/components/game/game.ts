@@ -3,47 +3,63 @@ import { ControlState, GameState } from './gamestate'
 import { getSimulator } from '../simulator/simulator';
 
 
-export const startGame = (renderingHandler: RenderingHandler, gamestate: GameState, controlstate: ControlState, requestAnimFrame: any) => {  
-    
-  const PHYSICS_TIME_STEP = 10; // 10 milliseconds simulated per step, 100 fps for physics simulation
-  var physicsAccumulator = 0;
-  var curDrawTime = new Date().getTime();
-  var prevDrawTime = new Date().getTime();
-  var startTime = new Date().getTime();
+const getTimeHandler = () => {
+  let physicsAccumulator = 0;
+  let curDrawTime = new Date().getTime();
+  let prevDrawTime = new Date().getTime();
+  const startTime = new Date().getTime();
+  const fpsFilter = 0.01;
+  let frameTime = 1.0/60.0 * 1000;
   
-  const calculateFPS = (() => {
-    var fpsFilter = 0.01;
-    var frameTime = 1.0/60.0 * 1000;
-    
-    return function() {
-      var elapsed = curDrawTime - prevDrawTime;
+  return {
+    startFrame: () => {
+      prevDrawTime = curDrawTime;
+      curDrawTime = new Date().getTime();
+      physicsAccumulator += curDrawTime - prevDrawTime;
+    },
+    getAccumulator: () => {
+      return physicsAccumulator;
+    },
+    setAccumulator: (val: number) => {
+      physicsAccumulator = val;
+    },
+    decreaseAccumulator: (val: number) => {
+      physicsAccumulator -= val;
+    },
+    gameTimeMs: () => {
+      return curDrawTime - startTime;
+    },
+    calculateFPS: () => {
+      const elapsed = curDrawTime - prevDrawTime;
       frameTime = (1-fpsFilter) * frameTime + fpsFilter * elapsed;
       return 1.0 / frameTime * 1000.0;
     }
-  })();
-  
+  }
+}
+
+export const startGame = (renderingHandler: RenderingHandler, gamestate: GameState, controlstate: ControlState, requestAnimFrame: any) => {  
+    
+  const PHYSICS_TIME_STEP = 10; // 10 milliseconds simulated per step, 100 fps for physics simulation
+    
   const simulator = getSimulator(gamestate, controlstate, PHYSICS_TIME_STEP / 1000.0);
-
+  const timeHandler = getTimeHandler();
+  
   const tick = () => {
-    prevDrawTime = curDrawTime;
-    curDrawTime = new Date().getTime();
-    var frameTime = curDrawTime - prevDrawTime;
+    timeHandler.startFrame();
 
-    physicsAccumulator += frameTime;
-
-    if (physicsAccumulator > 100 * PHYSICS_TIME_STEP) // just skip time
+    if (timeHandler.getAccumulator() > 100 * PHYSICS_TIME_STEP) // just skip time
     {
-      physicsAccumulator = 5 * PHYSICS_TIME_STEP;
+      timeHandler.setAccumulator(5 * PHYSICS_TIME_STEP);
     }
 
-    gamestate.gametime = (curDrawTime - startTime) / 1000.0;
-    gamestate.fps = calculateFPS();
+    gamestate.gametime = timeHandler.gameTimeMs() / 1000.0;
+    gamestate.fps = timeHandler.calculateFPS();
     
-    while (physicsAccumulator >= PHYSICS_TIME_STEP)
+    while (timeHandler.getAccumulator() >= PHYSICS_TIME_STEP)
     {
       simulator.simulate();
       controlstate.clearClickedButtons();
-      physicsAccumulator -= PHYSICS_TIME_STEP;
+      timeHandler.decreaseAccumulator(PHYSICS_TIME_STEP);
     }
 
     // assumption that these guys below don't used clicked states as they are cleared in clearClickedButtons. Let's see.

@@ -12,15 +12,11 @@ import { getRenderingHandler } from './rendering/renderinghandler';
 
 class Game extends React.Component {
   controlstate: ControlState;
-  mainCanvas: HTMLCanvasElement | null;
-  visibilityCanvas: HTMLCanvasElement |null;
   gpuCanvasRef: React.RefObject<HTMLCanvasElement>;
   overlayCanvasRef: React.RefObject<HTMLCanvasElement>;
 
   constructor(props: Readonly<{}>) {
     super(props)
-    this.mainCanvas = null;
-    this.visibilityCanvas = null;
     this.gpuCanvasRef = React.createRef()
     this.overlayCanvasRef = React.createRef()
 
@@ -80,7 +76,7 @@ class Game extends React.Component {
     this.controlstate.keyboard.buttonsPressed.delete(evt.keyCode)
     this.controlstate.keyboard.buttonsClicked.add(evt.keyCode)
   }
-//<!--</canvas>-->
+
   render() {
     return (
       <div className="main_container">
@@ -93,12 +89,6 @@ class Game extends React.Component {
   }
 
   resize() {
-    this.mainCanvas!.width  = window.innerWidth;
-    this.mainCanvas!.height = window.innerHeight;
-
-    this.visibilityCanvas!.width = window.innerWidth;
-    this.visibilityCanvas!.height = window.innerHeight;
-
     this.gpuCanvasRef.current!.width  = window.innerWidth;
     this.gpuCanvasRef.current!.height = window.innerHeight;
 
@@ -107,22 +97,7 @@ class Game extends React.Component {
   }
 
   componentDidMount() {
-
     const gamestate = getGameState();
-
-
-    this.mainCanvas = document.createElement('canvas');
-    this.mainCanvas.width = this.gpuCanvasRef.current!.width;
-    this.mainCanvas.height = this.gpuCanvasRef.current!.height;
-    
-    this.visibilityCanvas = document.createElement('canvas');
-    this.visibilityCanvas.width = this.gpuCanvasRef.current!.width;
-    this.visibilityCanvas.height = this.gpuCanvasRef.current!.height;
-    
-    const mainCanvasHelper = getCanvasHelper(this.mainCanvas, gamestate.camera);
-    const mainRenderer = getPrimitiveRenderer(mainCanvasHelper);
-
-    const visibilityRenderer = getPrimitiveRenderer(getCanvasHelper(this.visibilityCanvas, gamestate.camera))
 
     const overlayCanvas = this.overlayCanvasRef.current!;
     const overlayCanvasHelper =  getCanvasHelper(overlayCanvas, gamestate.camera);
@@ -145,7 +120,7 @@ class Game extends React.Component {
       return;
     }
 
-    const renderingHandler = getRenderingHandler(mainRenderer, visibilityRenderer, gpuRenderer, overlayRenderer, gamestate);
+    const renderingHandler = getRenderingHandler(gpuRenderer, overlayRenderer, gamestate);
 
     startGame(renderingHandler, gamestate, this.controlstate, requestAnimFrame());
   }

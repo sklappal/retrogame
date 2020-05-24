@@ -286,12 +286,13 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
       findVisibilityStrip(gamestate.player.pos, gamestate.player.lightradius, gamestate.scene.staticObjects, pixels.subarray(0, width));
       findVisibilityStrip(gamestate.scene.light.pos, gamestate.scene.light.radius, gamestate.scene.staticObjects, pixels.subarray(width, 2*width));
 
-      gl.activeTexture(gl.TEXTURE0)
+      const textureUnit = 0;
+      gl.activeTexture(gl.TEXTURE0 + textureUnit)
       
       gl.bindTexture(gl.TEXTURE_2D, myTexture);
       
       const sampler = gl.getUniformLocation(program, 'uSampler');
-      gl.uniform1i(sampler, 0);
+      gl.uniform1i(sampler, textureUnit);
       gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, width, height, gl.RED, gl.FLOAT, pixels);
   }
 

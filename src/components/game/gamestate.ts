@@ -79,8 +79,8 @@ const player = {
   lightradius: 35.0,
   velocity: vec2.fromValues(0.0, 0.0),
   model: circle(1.0, "red"),
-  maxSpeed: 0.2,
-  acceleration: 0.5,
+  maxSpeed: 20.0, // units per second
+  acceleration: 50.0, // units per second squared?
   aimAngle: 0.0
 }
 

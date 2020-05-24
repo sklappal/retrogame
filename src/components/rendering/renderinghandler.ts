@@ -6,8 +6,7 @@ export interface RenderingHandler {
   draw(): void;
 }
 
-export const getRenderingHandler = (mainRenderer: PrimitiveRenderer, 
-    visibilityRenderer: PrimitiveRenderer, 
+export const getRenderingHandler = (
     gpuRenderer: GpuRenderer,
     overlayRenderer: PrimitiveRenderer,
     gamestate: GameState) => {
@@ -17,14 +16,13 @@ export const getRenderingHandler = (mainRenderer: PrimitiveRenderer,
   }
 
   const drawOverlay = () => {
+    overlayRenderer.clearCanvas("#00000000");
     var text = "FPS: " + gamestate.fps.toFixed(1)   
     overlayRenderer.drawTextCanvas([overlayRenderer.width()-120, overlayRenderer.height()-40], text)
   }
   
   return {
     draw: () => {
-      overlayRenderer.clearCanvas("#00000000");
-
       drawGpu();
 
       drawOverlay();

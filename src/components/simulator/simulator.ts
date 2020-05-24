@@ -3,7 +3,7 @@ import KeyCodes from '../game/keycodes'
 import { vec2 } from "gl-matrix";
 import { circle } from "../models/models";
 
-export const getSimulator = (gamestate: GameState, controlstate: ControlState) => {
+export const getSimulator = (gamestate: GameState, controlstate: ControlState, physicsTimeStepInSeconds: number) => {
 
   const FRICTION_COEFFICIENT = 0.8
   const CAMERA_MAX_DISTANCE_FROM_PLAYER_RELATIVE_TO_FOV = 0.2;
@@ -32,7 +32,7 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState) =
 
   const handleInputs = () => {
     // Camera movement
-    const cameraMovement = getMovementVector(KeyCodes.KEY_LEFT, KeyCodes.KEY_RIGHT, KeyCodes.KEY_UP, KeyCodes.KEY_DOWN, controlstate, 0.5);
+    const cameraMovement = getMovementVector(KeyCodes.KEY_LEFT, KeyCodes.KEY_RIGHT, KeyCodes.KEY_UP, KeyCodes.KEY_DOWN, controlstate, 50.0);
     gamestate.camera.velocity = cameraMovement;
 
 
@@ -61,7 +61,7 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState) =
 
   const handleCamera = () => {
 
-    vec2.add(gamestate.camera.pos, gamestate.camera.pos, gamestate.camera.velocity);
+    vec2.add(gamestate.camera.pos, gamestate.camera.pos, vec2.scale(vec2.create(), gamestate.camera.velocity, physicsTimeStepInSeconds));
     
     const fov = gamestate.camera.fieldOfView;
     const allowedDistance = fov*CAMERA_MAX_DISTANCE_FROM_PLAYER_RELATIVE_TO_FOV;
@@ -80,10 +80,10 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState) =
   }
 
   const handlePlayerMovement = () => {
-    const movement = gamestate.player.velocity;
+    const movement = gamestate.player.velocity; // units per second
 
-    const movementX = vec2.fromValues(movement[0], 0.0);
-    const movementY = vec2.fromValues(0.0, movement[1]);
+    const movementX = vec2.fromValues(movement[0] * physicsTimeStepInSeconds, 0.0);
+    const movementY = vec2.fromValues(0.0, movement[1] * physicsTimeStepInSeconds);
     const newPos1 = vec2.add(vec2.create(), gamestate.player.pos, movementX);
     if (!gamestate.scene.isInsideObject(newPos1)) {
       gamestate.player.pos = newPos1;

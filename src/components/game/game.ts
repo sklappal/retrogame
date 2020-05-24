@@ -4,8 +4,8 @@ import { getSimulator } from '../simulator/simulator';
 
 
 export const startGame = (renderingHandler: RenderingHandler, gamestate: GameState, controlstate: ControlState, requestAnimFrame: any) => {  
-  
-  const PHYSICS_TIME_STEP = 10; // 100 fps for physics simulation
+    
+  const PHYSICS_TIME_STEP = 10; // 10 milliseconds simulated per step, 100 fps for physics simulation
   var physicsAccumulator = 0;
   var curDrawTime = new Date().getTime();
   var prevDrawTime = new Date().getTime();
@@ -22,6 +22,8 @@ export const startGame = (renderingHandler: RenderingHandler, gamestate: GameSta
     }
   })();
   
+  const simulator = getSimulator(gamestate, controlstate, PHYSICS_TIME_STEP / 1000.0);
+
   const tick = () => {
     prevDrawTime = curDrawTime;
     curDrawTime = new Date().getTime();
@@ -36,8 +38,6 @@ export const startGame = (renderingHandler: RenderingHandler, gamestate: GameSta
 
     gamestate.gametime = (curDrawTime - startTime) / 1000.0;
     gamestate.fps = calculateFPS();
-   
-    const simulator = getSimulator(gamestate, controlstate);
     
     while (physicsAccumulator >= PHYSICS_TIME_STEP)
     {

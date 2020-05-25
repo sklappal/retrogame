@@ -271,7 +271,7 @@ export const findVisibilityStrip = (pos: vec2, radius:number, items: ReadonlyArr
 
   const segments = purgeOccludedSegments(segmentsNonPurged);
  
-  const getAngle = (i:number) => ((i+0.5) / resultBuffer.length) * M_2PI - Math.PI;
+  const getAngle = (i:number) => ((i) / resultBuffer.length) * M_2PI - Math.PI;
 
   if (sinBuffer.length !== resultBuffer.length) {
     sinBuffer = [];

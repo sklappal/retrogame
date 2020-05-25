@@ -1,6 +1,6 @@
 import { CanvasHelper } from './canvashelper'
 import { GameState } from '../game/gamestate';
-import { vec2, mat3, vec4 } from 'gl-matrix';
+import { vec2, mat3, vec4, vec3 } from 'gl-matrix';
 import { vertexShaderSource, fragmentShaderSource } from './shaders';
 import { Rect, Circle, Model } from '../models/models';
 import { findVisibilityStrip } from './visibility';
@@ -85,6 +85,16 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
     createCircleBuffer();
   }
 
+  const setLightUniforms = (pos: vec2, color: vec3, intensity: number, index: number) => {
+    let location = gl.getUniformLocation(programInfo.program, "uLightPositionsWorld[" + index + "]")
+    gl.uniform2f(location, pos[0], pos[1]);
+
+    location = gl.getUniformLocation(programInfo.program, "uLightColors[" + index + "]")
+    gl.uniform3f(location, color[0], color[1], color[2]);
+    
+    location = gl.getUniformLocation(programInfo.program, "uLightIntensities[" + index + "]")
+    gl.uniform1f(location, intensity);
+  }
   
   const initGl = () => {
     createBuffers();
@@ -97,8 +107,13 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
       uViewMatrix: canvasHelper.world2viewMatrix(),
       uProjectionMatrix: canvasHelper.view2ndcMatrix()
     }
-
+    
     twgl.setUniforms(programInfo, uniforms);
+
+    setLightUniforms(gamestate.player.pos, gamestate.player.light.color, gamestate.player.light.intensity, 0);
+    setLightUniforms(gamestate.scene.light.pos, gamestate.scene.light.params.color, gamestate.scene.light.params.intensity, 1);
+
+    
   }
 
   const modelMatrix = mat3.create();

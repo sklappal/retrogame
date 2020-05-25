@@ -43,6 +43,7 @@ export const startGame = (renderingHandler: RenderingHandler, gamestate: GameSta
     
   const simulator = getSimulator(gamestate, controlstate, PHYSICS_TIME_STEP / 1000.0);
   const timeHandler = getTimeHandler();
+  let frameNumber = 0;
   
   const tick = () => {
     timeHandler.startFrame();
@@ -57,7 +58,7 @@ export const startGame = (renderingHandler: RenderingHandler, gamestate: GameSta
     
     while (timeHandler.getAccumulator() >= PHYSICS_TIME_STEP)
     {
-      simulator.simulate();
+      simulator.simulate(frameNumber++);
       controlstate.clearClickedButtons();
       timeHandler.decreaseAccumulator(PHYSICS_TIME_STEP);
     }

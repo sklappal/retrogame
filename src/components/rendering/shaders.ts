@@ -25,13 +25,14 @@ export const vertexShaderSource = `#version 300 es
   precision highp float;
 
   #define M_PI 3.1415926535897932384626433832795
+  #define NUM_LIGHTS 2
 
   in vec2 posWorld;
   
-  uniform vec2 uPlayerPositionWorld;
-  uniform float uPlayerLightRadius;
-  uniform vec2 uLightPositionWorld;
-  uniform float uLightRadius;
+  uniform vec2 uLightPositionsWorld[NUM_LIGHTS];
+  uniform vec3 uLightColors[NUM_LIGHTS];
+  uniform float uLightIntensities[NUM_LIGHTS];
+  
   uniform vec4 uColor;
   
   uniform sampler2D uSampler;
@@ -91,11 +92,11 @@ export const vertexShaderSource = `#version 300 es
   void main(void) {
     vec4 worldColor = uColor;
 
-    vec3 playerLight = getLightContribution(uPlayerPositionWorld, posWorld, vec3(.4, .0, .8));
-    float playerLightMultiplier = getShadowMultiplier(uPlayerPositionWorld, posWorld, uSampler, 0.0);
+    vec3 playerLight = getLightContribution(uLightPositionsWorld[0], posWorld, uLightColors[0] * uLightIntensities[0]);
+    float playerLightMultiplier = getShadowMultiplier(uLightPositionsWorld[0], posWorld, uSampler, 0.0);
         
-    vec3 lightLight = getLightContribution(uLightPositionWorld, posWorld, vec3(0.1, 0.1, 0.0));
-    float lightMultiplier = getShadowMultiplier(uLightPositionWorld, posWorld, uSampler, 1.0) * playerLightMultiplier;
+    vec3 lightLight = getLightContribution(uLightPositionsWorld[1], posWorld, uLightColors[1] * uLightIntensities[1]);
+    float lightMultiplier = getShadowMultiplier(uLightPositionsWorld[1], posWorld, uSampler, 1.0) * playerLightMultiplier;
 
     vec3 ambientLight = vec3(0.001, 0.001, 0.001);
     

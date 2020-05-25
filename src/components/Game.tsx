@@ -1,6 +1,6 @@
 import React from 'react';
 import { startGame } from './game/game'
-import requestAnimFrame from '../utils/utils'
+import { requestAnimFrame } from '../utils/utils'
 import { vec2 } from 'gl-matrix'
 import { ControlState, getGameState } from './game/gamestate';
 import { getPrimitiveRenderer } from './rendering/primitiverenderer';

@@ -1,7 +1,8 @@
-import { GameState, ControlState, createDynamicObject } from "../game/gamestate";
+import { GameState, ControlState } from "../game/gamestate";
 import KeyCodes from '../game/keycodes'
 import { vec2 } from "gl-matrix";
 import { circle } from "../models/models";
+import { randomColor } from "../../utils/utils";
 
 export const getSimulator = (gamestate: GameState, controlstate: ControlState, physicsTimeStepInSeconds: number) => {
 
@@ -51,8 +52,8 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState, p
     // Player actions
     if (controlstate.mouse.buttonsClicked.has(0)) {
       const aimAngle = gamestate.player.aimAngle;
-      const dir = vec2.scale(vec2.create(), vec2.fromValues(Math.cos(aimAngle), Math.sin(aimAngle)), 0.9)
-      gamestate.scene.dynamicObjects.push(createDynamicObject(gamestate.player.pos,  dir, circle(0.2, "blue"),))
+      const dir = vec2.scale(vec2.create(), vec2.fromValues(Math.cos(aimAngle), Math.sin(aimAngle)), 0.5)
+      gamestate.createDynamicObject(gamestate.player.pos, dir, circle(0.2, "blue"))
     }
 
   }
@@ -100,13 +101,22 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState, p
     })
   }
 
-  const simulate = () => {
+  const initialIntensity = gamestate.scene.light.params.intensity;
+
+  const simulate = (frameNumber: number) => {
     handleInputs();
     handleCamera();
     handlePlayerMovement();
     handleDynamicObjects();
 
-    gamestate.scene.light.pos[1] += Math.cos(2*gamestate.gametime);
+    gamestate.removeOlderDynamicObjects(5.0);
+    
+    
+    gamestate.scene.light.params.intensity = initialIntensity + 20 + 20*Math.cos(gamestate.gametime)
+    if (frameNumber % 50 === 0) {
+      gamestate.scene.light.params.color = randomColor();
+      
+    }
   }
 
   return {

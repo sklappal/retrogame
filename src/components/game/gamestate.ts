@@ -1,6 +1,7 @@
 import { vec2, vec3 } from 'gl-matrix'
 import { Model, rect, circle } from '../models/models'
-import { svgString } from './svg'
+import { randomColor } from '../../utils/utils';
+//import { svgString } from './svg'
 
 export interface ControlState {
     mouse: {
@@ -57,6 +58,7 @@ export interface StaticObject {
 
 export interface DynamicObject extends StaticObject {
   velocity: vec2
+  creationTime: number
 }
 
 export interface Scene {
@@ -76,13 +78,17 @@ export interface GameState {
   config: Config
   gametime: number
   fps: number
+
+  createDynamicObject(thisPos: vec2, velocity: vec2, model: Model): void
+
+  removeOlderDynamicObjects(delta: number): void
 }
 
-const player = {
+const playerDefault = {
   pos: vec2.fromValues(0.0, 0.0),
   light: {
-    color: vec3.fromValues(0.4,0.0, 0.8),
-    intensity: 3
+    color: randomColor(),
+    intensity: 10
   },
   velocity: vec2.fromValues(0.0, 0.0),
   model: circle(1.0, "red"),
@@ -91,42 +97,96 @@ const player = {
   aimAngle: 0.0
 }
 
-export const createObject = (thisPos: vec2, model: Model) => {
-  return {
-    pos: thisPos,
-    model: model,
-    isInside: (pos: vec2) => model.isInside(vec2.fromValues(pos[0] - thisPos[0], pos[1] - thisPos[1]))
+export class GameStateImpl implements GameState {
+  constructor(scene: SceneImpl) {
+    this.scene = scene;
+  }
+
+  player: Player = playerDefault;
+  camera: Camera = {
+        pos: vec2.fromValues(0.0, 0.0),
+        velocity: vec2.fromValues(0.0, 0.0),
+        fieldOfView: 130.0
+      }
+  scene: SceneImpl
+  config: Config = {debug: false}
+  gametime: number = 0;
+  fps: number = 60.0;
+  
+  createDynamicObject(thisPos: vec2, velocity: vec2, model: Model): void {
+    this.scene.createDynamicObject(thisPos, velocity, model, this.gametime);
+  }
+
+  removeOlderDynamicObjects(delta: number) {
+    for (let i = this.scene.dynamicObjects.length-1; i >= 0; i--) {
+      if (this.scene.dynamicObjects[i].creationTime < this.gametime - delta) {
+        this.scene.dynamicObjects.splice(i, 1);
+      }
+    }
   }
 }
 
-export const createDynamicObject  = (thisPos: vec2, velocity: vec2, model: Model) => {
-  return {
-    ...createObject(thisPos, model),
-    velocity: velocity
+export class SceneImpl implements Scene {
+  light: { pos: vec2; params: LightParameters } = {
+    pos: vec2.fromValues(10.0, 10.0),
+    params: {
+      color: vec3.fromValues(0.4, 0.4, 0.0),
+      intensity: 1.0,
+    }
+  }
+  
+  staticObjects: StaticObject[] = []
+  
+  dynamicObjects: DynamicObject[] = []
+  
+  isInsideObject(pos: vec2): boolean {
+     return this.staticObjects.some(item => item.isInside(pos))
+  }
+
+  createObject(thisPos: vec2, model: Model): StaticObject {
+    return {
+      pos: thisPos,
+      model: model,
+      isInside: (pos: vec2) => model.isInside(vec2.fromValues(pos[0] - thisPos[0], pos[1] - thisPos[1]))
+    }
+  }
+
+  createStaticObject(thisPos: vec2, model: Model): void {
+    this.staticObjects.push(this.createObject(thisPos, model));
+  }
+
+  createDynamicObject(thisPos: vec2, velocity: vec2, model: Model, creationTime: number): void {
+    this.dynamicObjects.push({
+      ...this.createObject(thisPos, model),
+      velocity: velocity,
+      creationTime: creationTime
+    });
   }
 }
 
 const getAttribute = (foo: SVGRectElement, name: string) => parseFloat(foo.getAttribute(name)!)*0.5;
 
+
 export const getGameState = () : GameState => {
-  var items: StaticObject[] = []
+  let scene = new SceneImpl();
   const count = 10
   const width = 3
   const margin = 1
   for (let i = 0; i < count; i++) {
     for (let j = 0; j < count; j++) {
-      items.push(createObject(
+      scene.createStaticObject(
         vec2.fromValues((i-count/2) * (width + 2*margin) + margin + width*0.5, (j-count/2) *(width + 2*margin) + margin + width*0.5),
-        rect( width, width, "black")));
+        rect( width, width, "black")
+        );
     }
   }
 
   for (let i = 0; i < 12; i++) {
     const angle = i * 2 * Math.PI / 12;
-    items.push(createObject(
+    scene.createStaticObject(
       vec2.fromValues(Math.cos(angle) * 60.0 , Math.sin(angle) * 60.0),
       circle(10.0, "black")
-    ));
+    );
   }
 
   /*const svg = document.createElement('svg');
@@ -141,27 +201,5 @@ export const getGameState = () : GameState => {
       rect(w, h, "black") )
   });*/
 
-  return  {
-    config: {debug: false},
-    player: player,
-    camera: {
-      pos: vec2.fromValues(0.0, 0.0),
-      velocity: vec2.fromValues(0.0, 0.0),
-      fieldOfView: 30.0
-    },
-    scene: {
-      light: {
-        pos: vec2.fromValues(10.0, 10.0),
-        params: {
-          color: vec3.fromValues(0.4, 0.4, 0.0),
-          intensity: 1.0,
-        }
-      },
-      staticObjects: items,
-      dynamicObjects: [],
-      isInsideObject: (pos: vec2) => items.some(item => item.isInside(pos))
-     },
-    gametime: 0.0,
-    fps: 0.0
-  }
+  return new GameStateImpl(scene);
 }

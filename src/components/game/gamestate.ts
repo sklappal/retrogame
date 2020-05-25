@@ -1,4 +1,4 @@
-import { vec2 } from 'gl-matrix'
+import { vec2, vec3 } from 'gl-matrix'
 import { Model, rect, circle } from '../models/models'
 import { svgString } from './svg'
 
@@ -24,14 +24,19 @@ export interface ControlState {
     clearClickedButtons(): void
 }
 
+export interface LightParameters {
+  intensity: number
+  color: vec3
+}
+
 export interface Player  {
-  pos: vec2
+  pos: vec2  
   velocity: vec2
-  lightradius: number
   maxSpeed: number
   acceleration: number
   model: Model
   aimAngle: number
+  light: LightParameters
 }
 
 export interface Camera   {
@@ -56,13 +61,12 @@ export interface DynamicObject extends StaticObject {
 
 export interface Scene {
   light: {
-    pos:vec2
-    radius:number
+    pos: vec2,
+    params: LightParameters
   }
   staticObjects: ReadonlyArray<StaticObject>
   dynamicObjects: Array<DynamicObject>
   isInsideObject: (pos: vec2) => boolean
-  ambientColor: string
 }
 
 export interface GameState {
@@ -76,7 +80,10 @@ export interface GameState {
 
 const player = {
   pos: vec2.fromValues(0.0, 0.0),
-  lightradius: 35.0,
+  light: {
+    color: vec3.fromValues(0.4,0.0, 0.8),
+    intensity: 3
+  },
   velocity: vec2.fromValues(0.0, 0.0),
   model: circle(1.0, "red"),
   maxSpeed: 20.0, // units per second
@@ -143,11 +150,16 @@ export const getGameState = () : GameState => {
       fieldOfView: 30.0
     },
     scene: {
-      light: {pos: vec2.fromValues(10.0, 10.0), radius: 30.0},
+      light: {
+        pos: vec2.fromValues(10.0, 10.0),
+        params: {
+          color: vec3.fromValues(0.4, 0.4, 0.0),
+          intensity: 1.0,
+        }
+      },
       staticObjects: items,
       dynamicObjects: [],
-      isInsideObject: (pos: vec2) => items.some(item => item.isInside(pos)),
-      ambientColor: "white"
+      isInsideObject: (pos: vec2) => items.some(item => item.isInside(pos))
      },
     gametime: 0.0,
     fps: 0.0

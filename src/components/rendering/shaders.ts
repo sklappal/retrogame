@@ -7,17 +7,13 @@ export const vertexShaderSource = `#version 300 es
   uniform mat3 uViewMatrix; // world coordinates to view
   uniform mat3 uProjectionMatrix; // view coordinates to NDC
   
-  in vec3 positionModel;
-  in vec2 coord; // texture coordinates: [0, 1.0]
-  
-  out vec2 texCoord;
+  in vec3 position;
   out vec2 posWorld;
 
   void main(void) {
-    vec3 positionWorld = uModelMatrix * vec3(positionModel.xy, 1.0);
+    vec3 positionWorld = uModelMatrix * vec3(position.xy, 1.0);
     posWorld = positionWorld.xy;
     gl_Position = vec4((uProjectionMatrix * uViewMatrix) * positionWorld, 1.0);
-    texCoord = coord;
   }
 
   ///////////////////`;
@@ -30,7 +26,6 @@ export const vertexShaderSource = `#version 300 es
 
   #define M_PI 3.1415926535897932384626433832795
 
-  in vec2 texCoord;
   in vec2 posWorld;
   
   uniform vec2 uPlayerPositionWorld;

@@ -3,16 +3,30 @@ import { Model, rect, circle } from '../models/models'
 import { randomColor } from '../../utils/utils';
 //import { svgString } from './svg'
 
+const getObjectId = (() => {
+  let id = 0;
+  return () => {
+    return id++
+  }
+})();
+
+export interface Light {
+  id: number
+  pos: vec2
+  params: LightParameters
+}
+
 export interface LightParameters {
   intensity: number
   color: vec3
   // -pi,pi
-  angle: number | null
+  angle?: number
   // 0, 2pi
-  angularWidth: number | null
+  angularWidth?: number
 }
 
 export interface Player  {
+  id: number
   pos: vec2  
   velocity: vec2
   maxSpeed: number
@@ -33,6 +47,7 @@ export interface Config {
 }
 
 export interface StaticObject {
+  id: number,
   model: Model
   pos: vec2
   isInside: (v: vec2) => boolean
@@ -64,10 +79,11 @@ export interface GameState {
 }
 
 const playerDefault = {
+  id: getObjectId(),
   pos: vec2.fromValues(0.0, 0.0),
   light: {
     color: randomColor(),
-    intensity: 0.1,
+    intensity: 0.5,
     angle: 0.0,
     angularWidth: 0.2*Math.PI
   },
@@ -107,29 +123,22 @@ export class GameStateImpl implements GameState {
   }
 }
 
-export interface Light {
-  pos: vec2
-  params: LightParameters
-}
-
 export class SceneImpl implements Scene {
   lights: Light[] = [
     {
+      id: getObjectId(),
       pos: vec2.fromValues(10.0, 10.0),
       params: {
         color: vec3.fromValues(0.4, 0.4, 0.0),
-        intensity: 1.0,
-        angle: null,
-        angularWidth: null
+        intensity: 50.0
       }
     },
     {
+      id: getObjectId(),
       pos: vec2.fromValues(100.0, 0.0),
       params: {
         color: vec3.fromValues(0.4, 0.4, 0.0),
-        intensity: 1.0,
-        angle: null,
-        angularWidth: null
+        intensity: 50.0
       }
     }
   ];
@@ -144,6 +153,7 @@ export class SceneImpl implements Scene {
 
   createObject(thisPos: vec2, model: Model): StaticObject {
     return {
+      id: getObjectId(),
       pos: thisPos,
       model: model,
       isInside: (pos: vec2) => model.isInside(vec2.fromValues(pos[0] - thisPos[0], pos[1] - thisPos[1]))

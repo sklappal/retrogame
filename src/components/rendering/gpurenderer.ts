@@ -210,20 +210,13 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
 
     drawPlayer();
   }
+
+
   const width = 1024;
   const height = 4;
   const pixels = new Float32Array(width*height);
-  const updateTexture = () => {
-    // this one is used for visibility
-    findVisibilityStrip(gamestate.player.pos, {...gamestate.player.light, angle: null, angularWidth: null}, gamestate.scene.staticObjects, pixels.subarray(0, width));
 
-    // this one is used for player light
-    findVisibilityStrip(gamestate.player.pos, gamestate.player.light, gamestate.scene.staticObjects, pixels.subarray(width, 2*width));
-    
-    for (let i = 0; i < gamestate.scene.lights.length; i++) {
-      findVisibilityStrip(gamestate.scene.lights[i].pos, gamestate.scene.lights[i].params, gamestate.scene.staticObjects, pixels.subarray((i+2)*width, (i+3)*width));
-    }
-
+  const updateTextureOnGpu = (index: number) => {
     const textureUnit = 0;
     gl.activeTexture(gl.TEXTURE0 + textureUnit)
     
@@ -231,7 +224,28 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
     
     const sampler = gl.getUniformLocation(programInfo.program, 'uSampler');
     gl.uniform1i(sampler, textureUnit);
-    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, width, height, gl.RED, gl.FLOAT, pixels);
+    const xOffset = 0;
+    const yOffset = index;
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, xOffset, yOffset, width, 1, gl.RED, gl.FLOAT, pixels.subarray(index*width, (index+1)*width));
+  }
+
+  const updateTexture = () => {
+    // this one is used for visibility
+    if (findVisibilityStrip(-1, gamestate.player.pos, {...gamestate.player.light, angle: undefined, angularWidth: undefined}, gamestate.scene.staticObjects, pixels.subarray(0, width))) {
+      updateTextureOnGpu(0);
+    }
+    
+    // this one is used for player light
+    if (findVisibilityStrip(gamestate.player.id, gamestate.player.pos, gamestate.player.light, gamestate.scene.staticObjects, pixels.subarray(width, 2*width))) {
+      updateTextureOnGpu(1);
+    }
+
+    for (let i = 0; i < gamestate.scene.lights.length; i++) {
+      const light = gamestate.scene.lights[i];
+      if (findVisibilityStrip(light.id, light.pos, light.params, gamestate.scene.staticObjects, pixels.subarray((i+2)*width, (i+3)*width))) {
+        updateTextureOnGpu(i+2);
+      }
+    }
   }
 
   const initTexture = () => {

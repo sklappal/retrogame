@@ -1,6 +1,7 @@
 import { vec2 } from 'gl-matrix'
 import { Rect, Model, Circle } from '../models/models';
 import { StaticObject, LightParameters } from '../game/gamestate';
+import { VisibilityCacheItem, VisibilityCache, getVisibilityStripCache } from './visibilityStripCache';
 
 interface Segment {
   id: number
@@ -241,7 +242,10 @@ const purgeOccludedSegments = (segments : ReadonlyArray<Segment>) => {
 let sinBuffer: number[] = [];
 let cosBuffer: number[] = [];
 
-export const findVisibilityStrip = (pos: vec2, lightParams: LightParameters, items: ReadonlyArray<StaticObject>, resultBuffer: Float32Array) => {
+let cache: VisibilityCache = getVisibilityStripCache();
+
+export const findVisibilityStripNoCache = (pos: vec2, lightParams: LightParameters, items: ReadonlyArray<StaticObject>, resultBuffer: Float32Array) => {
+
   const elementSegments = items.map(element => findElementSegments(element.pos, element.model, pos));
 
   const radiusSquared = lightParams.intensity * 10.0; // This is from this eq: Math.sqrt(lightParams.intensity * 10.0) * Math.sqrt(lightParams.intensity * 10.0)
@@ -277,7 +281,7 @@ export const findVisibilityStrip = (pos: vec2, lightParams: LightParameters, ite
 
   let halfWidth = 0.0;
   let checkAngle = false;
-  if (lightParams.angle !== null && lightParams.angularWidth !== null) {
+  if (lightParams.angle !== undefined && lightParams.angularWidth !== undefined) {
     checkAngle = true;
     halfWidth = lightParams.angularWidth*0.5
   }
@@ -293,6 +297,16 @@ export const findVisibilityStrip = (pos: vec2, lightParams: LightParameters, ite
       resultBuffer[i] =  isec;
     }
   }
+}
 
-  return resultBuffer;
+export const findVisibilityStrip = (lightId: number, pos: vec2, lightParams: LightParameters, items: ReadonlyArray<StaticObject>, resultBuffer: Float32Array) => {
+  if (cache.isInCache({id: lightId, pos, angle: lightParams.angle, angularWidth: lightParams.angularWidth})) {
+    return false;
+  }
+
+  cache.addOrUpdate({id:lightId, pos, angle: lightParams.angle, angularWidth: lightParams.angularWidth});
+  
+  findVisibilityStripNoCache(pos, lightParams, items, resultBuffer);
+
+  return true;
 }

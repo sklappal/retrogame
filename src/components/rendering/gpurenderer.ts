@@ -103,7 +103,6 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
   const copyGameState = () => {
     const uniforms = {
       uPlayerPositionWorld: gamestate.player.pos,
-      uLightPositionWorld: gamestate.scene.light.pos,
       uViewMatrix: canvasHelper.world2viewMatrix(),
       uProjectionMatrix: canvasHelper.view2ndcMatrix()
     }
@@ -111,10 +110,10 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
     twgl.setUniforms(programInfo, uniforms);
 
     setLightUniforms(gamestate.player.pos, gamestate.player.light.color, gamestate.player.light.intensity, 0);
-    setLightUniforms(gamestate.scene.light.pos, gamestate.scene.light.params.color, gamestate.scene.light.params.intensity, 1);
-
-    
-  }
+    for (let i = 0; i < gamestate.scene.lights.length; i++) {
+      setLightUniforms(gamestate.scene.lights[i].pos, gamestate.scene.lights[i].params.color, gamestate.scene.lights[i].params.intensity, i+1);
+    }
+   }
 
   const modelMatrix = mat3.create();
 
@@ -185,7 +184,9 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
 
   const lightColor = vec4.fromValues(0.1, 0.1, 0.1, 1.0);
   const drawLights = () => {
-    drawCircle(0.2, gamestate.scene.light.pos, lightColor)
+    for (let i = 0; i < gamestate.scene.lights.length; i++) {
+      drawCircle(0.2, gamestate.scene.lights[i].pos, lightColor)
+    }
   }
 
   const playerColor = vec4.fromValues(1.0, 0.0, 0.0, 1.0);
@@ -210,20 +211,27 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
     drawPlayer();
   }
   const width = 1024;
-  const height = 2;
+  const height = 4;
   const pixels = new Float32Array(width*height);
   const updateTexture = () => {
-      findVisibilityStrip(gamestate.player.pos, gamestate.player.light.intensity * 20.0, gamestate.scene.staticObjects, pixels.subarray(0, width));
-      findVisibilityStrip(gamestate.scene.light.pos, gamestate.scene.light.params.intensity * 20.0, gamestate.scene.staticObjects, pixels.subarray(width, 2*width));
+    // this one is used for visibility
+    findVisibilityStrip(gamestate.player.pos, {...gamestate.player.light, angle: null, angularWidth: null}, gamestate.scene.staticObjects, pixels.subarray(0, width));
 
-      const textureUnit = 0;
-      gl.activeTexture(gl.TEXTURE0 + textureUnit)
-      
-      gl.bindTexture(gl.TEXTURE_2D, myTexture);
-      
-      const sampler = gl.getUniformLocation(programInfo.program, 'uSampler');
-      gl.uniform1i(sampler, textureUnit);
-      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, width, height, gl.RED, gl.FLOAT, pixels);
+    // this one is used for player light
+    findVisibilityStrip(gamestate.player.pos, gamestate.player.light, gamestate.scene.staticObjects, pixels.subarray(width, 2*width));
+    
+    for (let i = 0; i < gamestate.scene.lights.length; i++) {
+      findVisibilityStrip(gamestate.scene.lights[i].pos, gamestate.scene.lights[i].params, gamestate.scene.staticObjects, pixels.subarray((i+2)*width, (i+3)*width));
+    }
+
+    const textureUnit = 0;
+    gl.activeTexture(gl.TEXTURE0 + textureUnit)
+    
+    gl.bindTexture(gl.TEXTURE_2D, myTexture);
+    
+    const sampler = gl.getUniformLocation(programInfo.program, 'uSampler');
+    gl.uniform1i(sampler, textureUnit);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, width, height, gl.RED, gl.FLOAT, pixels);
   }
 
   const initTexture = () => {

@@ -1,8 +1,9 @@
-import { GameState, ControlState } from "../game/gamestate";
+import { GameState } from "../game/gamestate";
 import KeyCodes from '../game/keycodes'
 import { vec2 } from "gl-matrix";
 import { circle } from "../models/models";
 import { randomColor, hslToRgb } from "../../utils/utils";
+import { ControlState } from "../Game";
 
 export const getSimulator = (gamestate: GameState, controlstate: ControlState, physicsTimeStepInSeconds: number) => {
 
@@ -38,8 +39,9 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState, p
 
 
     // Player movement
-    const mouseToPlayer = vec2.sub(vec2.create(), controlstate.mouse.pos, gamestate.player.pos)
+    const mouseToPlayer = vec2.sub(vec2.create(), controlstate.mouse.pos(), gamestate.player.pos)
     gamestate.player.aimAngle = Math.atan2(mouseToPlayer[1], mouseToPlayer[0]);
+    gamestate.player.light.angle = gamestate.player.aimAngle;
 
     const playerAcceleration = getMovementVector(KeyCodes.KEY_A, KeyCodes.KEY_D, KeyCodes.KEY_W, KeyCodes.KEY_S, controlstate, gamestate.player.acceleration)
     if (playerAcceleration[0] === 0.0) gamestate.player.velocity[0] *= FRICTION_COEFFICIENT;
@@ -101,7 +103,7 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState, p
     })
   }
 
-  const initialIntensity = gamestate.scene.light.params.intensity;
+  const initialIntensity = gamestate.scene.lights[0].params.intensity;
 
   const simulate = (frameNumber: number) => {
     handleInputs();
@@ -113,8 +115,10 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState, p
     
     gamestate.camera.fieldOfView = Math.max(10.0, gamestate.camera.fieldOfView + controlstate.mouse.wheelDelta*-5.0);
     
-    gamestate.scene.light.params.intensity = initialIntensity + 20 + 20*Math.cos(gamestate.gametime)
-    gamestate.scene.light.params.color = hslToRgb((frameNumber / 1000.0) % 1.0, 1.0, 0.5);
+    gamestate.scene.lights[0].params.intensity = initialIntensity + 20 + 20*Math.cos(gamestate.gametime)
+    gamestate.scene.lights[0].params.color = hslToRgb((frameNumber / 1000.0) % 1.0, 1.0, 0.5);
+    gamestate.scene.lights[1].params.intensity = initialIntensity + 20 + 20*Math.cos(gamestate.gametime)
+    gamestate.scene.lights[1].params.color = hslToRgb((frameNumber / 1000.0) % 1.0, 1.0, 0.5);
 
   }
 

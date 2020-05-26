@@ -3,33 +3,13 @@ import { Model, rect, circle } from '../models/models'
 import { randomColor } from '../../utils/utils';
 //import { svgString } from './svg'
 
-export interface ControlState {
-    mouse: {
-      pos: vec2,
-      posCanvas: vec2,
-      // Actively being pressed
-      buttonsPressed: Set<number>,
-      // Clicked before this frame
-      buttonsClicked: Set<number>,
-      // -1, 0 or +1
-      wheelDelta: number
-    }
-
-    keyboard: {
-      // Actively being pressed
-      buttonsPressed: Set<number>,
-      // Clicked before this frame
-      buttonsClicked: Set<number>
-    }
-
-    isKeyPressed: (keyCode: number) => boolean
-
-    clearClickedButtons(): void
-}
-
 export interface LightParameters {
   intensity: number
   color: vec3
+  // -pi,pi
+  angle: number | null
+  // 0, 2pi
+  angularWidth: number | null
 }
 
 export interface Player  {
@@ -64,10 +44,7 @@ export interface DynamicObject extends StaticObject {
 }
 
 export interface Scene {
-  light: {
-    pos: vec2,
-    params: LightParameters
-  }
+  lights: Light[]
   staticObjects: ReadonlyArray<StaticObject>
   dynamicObjects: Array<DynamicObject>
   isInsideObject: (pos: vec2) => boolean
@@ -90,7 +67,9 @@ const playerDefault = {
   pos: vec2.fromValues(0.0, 0.0),
   light: {
     color: randomColor(),
-    intensity: 10
+    intensity: 0.1,
+    angle: 0.0,
+    angularWidth: 0.2*Math.PI
   },
   velocity: vec2.fromValues(0.0, 0.0),
   model: circle(1.0, "red"),
@@ -128,14 +107,32 @@ export class GameStateImpl implements GameState {
   }
 }
 
+export interface Light {
+  pos: vec2
+  params: LightParameters
+}
+
 export class SceneImpl implements Scene {
-  light: { pos: vec2; params: LightParameters } = {
-    pos: vec2.fromValues(10.0, 10.0),
-    params: {
-      color: vec3.fromValues(0.4, 0.4, 0.0),
-      intensity: 1.0,
+  lights: Light[] = [
+    {
+      pos: vec2.fromValues(10.0, 10.0),
+      params: {
+        color: vec3.fromValues(0.4, 0.4, 0.0),
+        intensity: 1.0,
+        angle: null,
+        angularWidth: null
+      }
+    },
+    {
+      pos: vec2.fromValues(100.0, 0.0),
+      params: {
+        color: vec3.fromValues(0.4, 0.4, 0.0),
+        intensity: 1.0,
+        angle: null,
+        angularWidth: null
+      }
     }
-  }
+  ];
   
   staticObjects: StaticObject[] = []
   

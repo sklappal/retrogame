@@ -1,6 +1,7 @@
 import { RenderingHandler } from '../rendering/renderinghandler'
-import { ControlState, GameState } from './gamestate'
+import { GameState } from './gamestate'
 import { getSimulator } from '../simulator/simulator';
+import { ControlState } from '../Game';
 
 
 const getTimeHandler = () => {

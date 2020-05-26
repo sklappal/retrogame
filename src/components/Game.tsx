@@ -2,13 +2,38 @@ import React from 'react';
 import { startGame } from './game/game'
 import { requestAnimFrame } from '../utils/utils'
 import { vec2 } from 'gl-matrix'
-import { ControlState, getGameState } from './game/gamestate';
+import { getGameState } from './game/gamestate';
 import { getPrimitiveRenderer } from './rendering/primitiverenderer';
 import { getCanvasHelper, CanvasHelper } from './rendering/canvashelper';
 
 import '../styles/Game.css'
 import { getGpuRenderer } from './rendering/gpurenderer';
 import { getRenderingHandler } from './rendering/renderinghandler';
+
+
+export interface ControlState {
+  mouse: {
+    pos: () => vec2,
+    posCanvas: vec2,
+    // Actively being pressed
+    buttonsPressed: Set<number>,
+    // Clicked before this frame
+    buttonsClicked: Set<number>,
+    // -1, 0 or +1
+    wheelDelta: number
+  }
+
+  keyboard: {
+    // Actively being pressed
+    buttonsPressed: Set<number>,
+    // Clicked before this frame
+    buttonsClicked: Set<number>
+  }
+
+  isKeyPressed: (keyCode: number) => boolean
+
+  clearClickedButtons(): void
+}
 
 class Game extends React.Component {
   controlstate: ControlState;
@@ -30,7 +55,7 @@ class Game extends React.Component {
 
     this.controlstate = {
       mouse: {
-        pos: vec2.fromValues(0.0, 0.0),
+        pos: () => vec2.fromValues(0.0, 0.0),
         posCanvas: vec2.fromValues(0.0, 0.0),
         buttonsPressed: mouseButtonsPressed,
         buttonsClicked: mouseButtonsClicked,
@@ -67,7 +92,7 @@ class Game extends React.Component {
     const x = evt.clientX;
     const y = evt.clientY;
     this.controlstate.mouse.posCanvas = this.ScreenToCanvas(x, y);
-    this.controlstate.mouse.pos = canvashelper.canvas2world(this.controlstate.mouse.posCanvas)
+    this.controlstate.mouse.pos = () => canvashelper.canvas2world(this.controlstate.mouse.posCanvas)
   }
   
 

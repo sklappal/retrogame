@@ -25,7 +25,7 @@ export const vertexShaderSource = `#version 300 es
   precision highp float;
 
   #define M_PI 3.1415926535897932384626433832795
-  #define NUM_LIGHTS 2
+  #define NUM_LIGHTS 3
 
   in vec2 posWorld;
   
@@ -39,10 +39,6 @@ export const vertexShaderSource = `#version 300 es
 
   out vec4 fragmentColor;
 
-  vec3 getLightContribution(vec2 lightPos, vec2 currentPosition, vec3 lightColor) {
-    float d = distance(currentPosition, lightPos);
-    return min(lightColor, lightColor / (d*d)); 
-  }
 
   vec3 invert(vec3 v) {
     return vec3(1.0, 1.0, 1.0) - v;
@@ -64,43 +60,53 @@ export const vertexShaderSource = `#version 300 es
     return pow(mapped, vec3(1.0 / gamma));
   }
 
-  float sampleTextureAtAngle(float angle, sampler2D sampler, float index) {
-    float samplingLocation = float(round(  ((angle + M_PI) / (2.0 * M_PI)) * 1024.0) / 1024.0);
-    return texture(sampler, vec2(samplingLocation, 0.25 + index * 0.5)).r;
+  vec3 getLightContribution(int index, vec2 currentPosition) {
+    float d = distance(currentPosition,  uLightPositionsWorld[index]);
+    vec3 lightColor = uLightColors[index] * uLightIntensities[index];
+    return min(lightColor, lightColor / (d*d)); 
   }
 
-  float getShadowMultiplierForLightRay(vec2 lightRay, vec2 currentPos, sampler2D sampler, float index) {
+  float sampleTextureAtAngle(float angle, sampler2D sampler, int textureIndex) {
+    float samplingLocation = float(round(  ((angle + M_PI) / (2.0 * M_PI)) * 1024.0) / 1024.0);
+
+    float floatIndex = (float(textureIndex) + 0.5) * (1.0 / float(NUM_LIGHTS + 1));
+
+    return texture(sampler, vec2(samplingLocation, floatIndex)).r;
+  }
+
+  float getShadowMultiplier(int lightIndex, int textureIndex, vec2 currentPos, sampler2D sampler) {
+    vec2 lightRay = currentPos - uLightPositionsWorld[lightIndex];
     float lightDistance = length(lightRay);
     float angle = atan(lightRay.y, lightRay.x);
     float delta = (M_PI / 1024.0) * 0.5;
 
     float sum = 0.0;
     for (int i = 0; i < 9; i++) {
-      sum += sampleTextureAtAngle(angle+(float(i)-4.0)*delta, sampler, index) > lightDistance ? 1.0 : 0.0;
+      sum += sampleTextureAtAngle(angle+(float(i)-4.0)*delta, sampler, textureIndex) > lightDistance ? 1.0 : 0.0;
     }
 
     return sum / 9.0;
   }
 
-  float getShadowMultiplier(vec2 lightPos, vec2 currentPos, sampler2D sampler, float index) {
-    vec2 dir = currentPos-lightPos;
-    vec2 normal = normalize(vec2(-dir.y, dir.x));
-    return getShadowMultiplierForLightRay(dir, currentPos, sampler, index);
+  vec3 getLighting(int index, vec2 currentPos, sampler2D sampler) {
+    vec3 light = getLightContribution(index, posWorld);
+    float shadow = getShadowMultiplier(index, index+1, posWorld, uSampler);
+    return light*shadow;
   }
-
 
   void main(void) {
     vec4 worldColor = uColor;
 
-    vec3 playerLight = getLightContribution(uLightPositionsWorld[0], posWorld, uLightColors[0] * uLightIntensities[0]);
-    float playerLightMultiplier = getShadowMultiplier(uLightPositionsWorld[0], posWorld, uSampler, 0.0);
+    float playerLightMultiplier = getShadowMultiplier(0, 0, posWorld, uSampler);
         
-    vec3 lightLight = getLightContribution(uLightPositionsWorld[1], posWorld, uLightColors[1] * uLightIntensities[1]);
-    float lightMultiplier = getShadowMultiplier(uLightPositionsWorld[1], posWorld, uSampler, 1.0) * playerLightMultiplier;
+    vec3 light = vec3(0.0);
+    for (int i = 0; i < NUM_LIGHTS; i++) {
+      light += getLighting(i, posWorld, uSampler) * playerLightMultiplier;
+    }
 
-    vec3 ambientLight = vec3(0.001, 0.001, 0.001);
+    vec3 ambientLight = vec3(0.0, 0.0, 0.0);
     
-    fragmentColor = worldColor * vec4(toneMap(playerLight * playerLightMultiplier + lightLight * lightMultiplier + ambientLight) , 1.0);
+    fragmentColor = worldColor * vec4(toneMap(light  + ambientLight) , 1.0);
   }
 
   /////////////////////`;

@@ -1,6 +1,6 @@
 import { vec2 } from 'gl-matrix'
 import { Rect, Model, Circle } from '../models/models';
-import { StaticObject } from '../game/gamestate';
+import { StaticObject, LightParameters } from '../game/gamestate';
 
 interface Segment {
   id: number
@@ -101,14 +101,14 @@ const angleFromT1toT2 = (t1: vec2, t2: vec2) => {
 
 type intersection = { intersect: false} | {intersect: true, distance: number}
 
-const angleInSegment = (rayAngle: number, segment: Segment) => {
+const angleBetweenAngles = (rayAngle: number, angle1: number, angle2: number) => {
   //const angle = 0.0;
-  const start = normalizeTo2pi(segment.from[1] - rayAngle)
+  const start = normalizeTo2pi(angle1 - rayAngle)
   if (start > 0.0) {
     return false;
   }
 
-  let stop = normalizeTo2pi(segment.to[1] - rayAngle)
+  let stop = normalizeTo2pi(angle2 - rayAngle)
   if (stop < start) {
     return false;
   }
@@ -124,7 +124,7 @@ const angleInSegment = (rayAngle: number, segment: Segment) => {
 const rayLineIntersectionBuffer = [vec2.create(), vec2.create(), vec2.create()];
 
 export const raySegmentIntersection = (rayAngle: number, sina: number, cosa: number, segment: Segment): intersection  => {
-    if (!angleInSegment(rayAngle, segment)) {
+    if (!angleBetweenAngles(rayAngle, segment.from[1], segment.to[1])) {
       return { intersect: false};
     }
 
@@ -182,9 +182,9 @@ const isSegmentBehindOther = (thisSegment: Segment, otherSegment: Segment) => {
 }
 
 const normalizeTo2pi = (angle: number) => {
-  if (angle <= -Math.PI)
+  if (angle < -Math.PI)
     return angle + M_2PI;
-  if (angle >= Math.PI)
+  if (angle > Math.PI)
     return angle - M_2PI;
   return angle
 }
@@ -241,19 +241,11 @@ const purgeOccludedSegments = (segments : ReadonlyArray<Segment>) => {
 let sinBuffer: number[] = [];
 let cosBuffer: number[] = [];
 
-export const findVisibilityStrip = (pos: vec2, radius:number, items: ReadonlyArray<StaticObject>, resultBuffer: Float32Array) => {
+export const findVisibilityStrip = (pos: vec2, lightParams: LightParameters, items: ReadonlyArray<StaticObject>, resultBuffer: Float32Array) => {
   const elementSegments = items.map(element => findElementSegments(element.pos, element.model, pos));
 
-  const radiusSquared = radius*radius;
+  const radiusSquared = lightParams.intensity * 10.0; // This is from this eq: Math.sqrt(lightParams.intensity * 10.0) * Math.sqrt(lightParams.intensity * 10.0)
   elementSegments.filter(el => distanceToSegmentSquared(el[0], el[1]) < radiusSquared)
-
-  //const wallDistance = radiusSquared + radius;
-  const wallDistance = 1000.0;
-
-  elementSegments.push([[-wallDistance, -wallDistance], [wallDistance, -wallDistance]])
-  elementSegments.push([[wallDistance, -wallDistance], [wallDistance, wallDistance]])
-  elementSegments.push([[wallDistance, wallDistance], [-wallDistance, wallDistance]])
-  elementSegments.push([[-wallDistance, wallDistance], [-wallDistance, -wallDistance]])
 
   const segmentsNonPurged = elementSegments.map((rayPair, i) => {
     const r0 = toPolar(rayPair[0])
@@ -283,10 +275,23 @@ export const findVisibilityStrip = (pos: vec2, radius:number, items: ReadonlyArr
     }
   }
 
+  let halfWidth = 0.0;
+  let checkAngle = false;
+  if (lightParams.angle !== null && lightParams.angularWidth !== null) {
+    checkAngle = true;
+    halfWidth = lightParams.angularWidth*0.5
+  }
+  
   for (let i = 0; i < resultBuffer.length; i++) {
     const angle = getAngle(i)
-    const isec = findNearestIntersectingSegment(angle, sinBuffer[i], cosBuffer[i], segments);
-    resultBuffer[i] =  isec;
+
+    if (checkAngle && !angleBetweenAngles(angle, lightParams.angle! - halfWidth, lightParams.angle! + halfWidth)) {
+    //if (angle < lightParams.angle - halfWidth || angle > lightParams.angle + halfWidth) {
+      resultBuffer[i] = 0.0;
+    } else {
+      const isec = findNearestIntersectingSegment(angle, sinBuffer[i], cosBuffer[i], segments);
+      resultBuffer[i] =  isec;
+    }
   }
 
   return resultBuffer;

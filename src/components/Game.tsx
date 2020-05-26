@@ -33,7 +33,8 @@ class Game extends React.Component {
         pos: vec2.fromValues(0.0, 0.0),
         posCanvas: vec2.fromValues(0.0, 0.0),
         buttonsPressed: mouseButtonsPressed,
-        buttonsClicked: mouseButtonsClicked
+        buttonsClicked: mouseButtonsClicked,
+        wheelDelta: 0.0
       },
       keyboard: {
         buttonsPressed: keyboardButtonsPressed,
@@ -43,6 +44,7 @@ class Game extends React.Component {
       clearClickedButtons: () => {
         mouseButtonsClicked.clear()
         keyboardButtonsClicked.clear()
+        this.controlstate.mouse.wheelDelta = 0.0;
       }
     }
   }
@@ -66,6 +68,13 @@ class Game extends React.Component {
     const y = evt.clientY;
     this.controlstate.mouse.posCanvas = this.ScreenToCanvas(x, y);
     this.controlstate.mouse.pos = canvashelper.canvas2world(this.controlstate.mouse.posCanvas)
+  }
+  
+
+  OnMouseWheelCB(e: {wheelDelta: number | null, detail: number}) {
+    var delta = (e.wheelDelta || -e.detail) < 0 ? -1.0 : 1.0;
+    this.controlstate.mouse.wheelDelta = delta;
+    return false;
   }
 
   OnKeyDownCB(evt: { keyCode: number; }) {
@@ -105,6 +114,8 @@ class Game extends React.Component {
     overlayCanvas.onmousedown = (e: { button: number; }) => this.OnMouseDownCB(e);
     overlayCanvas.onmouseup = (e: any) => this.OnMouseUpCB(e);
     overlayCanvas.onmousemove = (e: any) => this.OnMouseMoveCB(e, overlayCanvasHelper);
+    overlayCanvas.addEventListener("mousewheel", (e:any) => this.OnMouseWheelCB(e), false);
+    overlayCanvas.addEventListener("DOMMouseScroll", (e:any) => this.OnMouseWheelCB(e), false);
 
     window.onkeydown = (e: any) => this.OnKeyDownCB(e);
     window.onkeyup = (e: any) => this.OnKeyUpCB(e);
@@ -125,6 +136,8 @@ class Game extends React.Component {
     startGame(renderingHandler, gamestate, this.controlstate, requestAnimFrame());
   }
 }
+
+
 
 
 export default Game;

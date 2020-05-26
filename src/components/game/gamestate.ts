@@ -10,7 +10,9 @@ export interface ControlState {
       // Actively being pressed
       buttonsPressed: Set<number>,
       // Clicked before this frame
-      buttonsClicked: Set<number>
+      buttonsClicked: Set<number>,
+      // -1, 0 or +1
+      wheelDelta: number
     }
 
     keyboard: {
@@ -106,7 +108,7 @@ export class GameStateImpl implements GameState {
   camera: Camera = {
         pos: vec2.fromValues(0.0, 0.0),
         velocity: vec2.fromValues(0.0, 0.0),
-        fieldOfView: 130.0
+        fieldOfView: 40.0
       }
   scene: SceneImpl
   config: Config = {debug: false}

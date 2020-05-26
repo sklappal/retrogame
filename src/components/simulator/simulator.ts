@@ -2,7 +2,7 @@ import { GameState, ControlState } from "../game/gamestate";
 import KeyCodes from '../game/keycodes'
 import { vec2 } from "gl-matrix";
 import { circle } from "../models/models";
-import { randomColor } from "../../utils/utils";
+import { randomColor, hslToRgb } from "../../utils/utils";
 
 export const getSimulator = (gamestate: GameState, controlstate: ControlState, physicsTimeStepInSeconds: number) => {
 
@@ -111,12 +111,11 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState, p
 
     gamestate.removeOlderDynamicObjects(5.0);
     
+    gamestate.camera.fieldOfView = Math.max(10.0, gamestate.camera.fieldOfView + controlstate.mouse.wheelDelta*-5.0);
     
     gamestate.scene.light.params.intensity = initialIntensity + 20 + 20*Math.cos(gamestate.gametime)
-    if (frameNumber % 50 === 0) {
-      gamestate.scene.light.params.color = randomColor();
-      
-    }
+    gamestate.scene.light.params.color = hslToRgb((frameNumber / 1000.0) % 1.0, 1.0, 0.5);
+
   }
 
   return {

@@ -22,9 +22,8 @@ export const getCanvasHelper = (canvas: HTMLCanvasElement, camera: Camera) => {
   // field of view tells how many world units are shown with the default resolution
   // defaultPixelCount tells how many canvas pixels this is
 
-  const fieldOfView = camera.fieldOfView;
+  
   const defaultPixelCount = 800.0;
-  const pixelSize = defaultPixelCount / fieldOfView;
 
   const getContext: () => CanvasRenderingContext2D = () => getCanvas().getContext("2d")!;
 
@@ -36,11 +35,13 @@ export const getCanvasHelper = (canvas: HTMLCanvasElement, camera: Camera) => {
 
   const height = () => getCanvas().height;
 
+  const pixelSize = () => defaultPixelCount / camera.fieldOfView;
+
   const world2view = (pos: vec2) => vec2.fromValues(pos[0] - camera.pos[0], pos[1] - camera.pos[1])
 
   const world2viewMatrix = () => mat3.fromTranslation(mat3.create(), vec2.negate(vec2.create(), camera.pos));
 
-  const view2canvasMatrix = () => mat3.fromValues(pixelSize, 0, 0, 0, pixelSize, 0, width() * 0.5, height() * 0.5, 1);
+  const view2canvasMatrix = () => mat3.fromValues(pixelSize(), 0, 0, 0, pixelSize(), 0, width() * 0.5, height() * 0.5, 1);
 
   const world2canvasMatrix = () => mat3.multiply(mat3.create(), view2canvasMatrix(), world2viewMatrix());
 
@@ -49,16 +50,16 @@ export const getCanvasHelper = (canvas: HTMLCanvasElement, camera: Camera) => {
   const view2ndcMatrix = () =>  mat3.multiply(mat3.create(), canvas2ndcMatrix(),  view2canvasMatrix());
 
   const view2canvas = (pos: vec2) => vec2.fromValues(
-    pos[0] * pixelSize + width() * 0.5, 
-    pos[1] * pixelSize + height() * 0.5);
+    pos[0] * pixelSize() + width() * 0.5, 
+    pos[1] * pixelSize() + height() * 0.5);
 
   const world2canvas = (pos: vec2) => view2canvas(world2view(pos));
 
-  const world2canvasLength = (length: number) => length * pixelSize;
+  const world2canvasLength = (length: number) => length * pixelSize();
 
   const canvas2view = (pos: vec2) => vec2.fromValues(
-    (pos[0] - width() * 0.5) / pixelSize,
-    (pos[1] - height() * 0.5) / pixelSize);
+    (pos[0] - width() * 0.5) / pixelSize(),
+    (pos[1] - height() * 0.5) / pixelSize());
 
   const view2world = (pos: vec2) => vec2.fromValues(pos[0] + camera.pos[0], pos[1] + camera.pos[1])
 

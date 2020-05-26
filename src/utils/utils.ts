@@ -9,7 +9,7 @@ export const requestAnimFrame = () => {
 };
 
 
-function hslToRgb(h:number, s:number, l:number){
+export const hslToRgb = (h:number, s:number, l:number) => {
   var r, g, b;
 
   if(s === 0){
@@ -31,11 +31,10 @@ function hslToRgb(h:number, s:number, l:number){
       b = hue2rgb(p, q, h - 1/3);
   }
 
-  return [r, g, b];
+  return vec3.fromValues(r, g, b);
 }
 
 export const randomColor = () => {
-  const color = hslToRgb(Math.random(), 1.0, 0.5);
-  return vec3.fromValues(color[0], color[1], color[2])
+  return hslToRgb(Math.random(), 1.0, 0.5);
 }
 

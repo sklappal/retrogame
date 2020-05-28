@@ -130,15 +130,17 @@ export class SceneImpl implements Scene {
       pos: vec2.fromValues(10.0, 10.0),
       params: {
         color: vec3.fromValues(0.4, 0.4, 0.0),
-        intensity: 50.0
+        intensity: 0.5
       }
     },
     {
       id: getObjectId(),
-      pos: vec2.fromValues(100.0, 0.0),
+      pos: vec2.fromValues(-20.0, 0.0),
       params: {
         color: vec3.fromValues(0.4, 0.4, 0.0),
-        intensity: 50.0
+        intensity: 1.0,
+        angle: 0.0,
+        angularWidth: 0.1*Math.PI
       }
     }
   ];

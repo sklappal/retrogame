@@ -2,6 +2,7 @@ import { vec2 } from 'gl-matrix'
 import { Rect, Model, Circle } from '../models/models';
 import { StaticObject, LightParameters } from '../game/gamestate';
 import { VisibilityCache, getVisibilityStripCache } from './visibilityStripCache';
+import { normalizeTo2pi } from '../../utils/utils';
 
 interface Segment {
   id: number
@@ -103,22 +104,15 @@ const angleFromT1toT2 = (t1: vec2, t2: vec2) => {
 type intersection = { intersect: false} | {intersect: true, distance: number}
 
 const angleBetweenAngles = (rayAngle: number, angle1: number, angle2: number) => {
-  //const angle = 0.0;
-  const start = normalizeTo2pi(angle1 - rayAngle)
-  if (start > 0.0) {
-    return false;
+  const angle = rayAngle - rayAngle;
+  const start = normalizeTo2pi(angle1 - rayAngle);
+  const stop = normalizeTo2pi(angle2 - rayAngle);
+
+  if (start < stop) {
+    return start <= angle && stop >= angle;
   }
 
-  let stop = normalizeTo2pi(angle2 - rayAngle)
-  if (stop < start) {
-    return false;
-  }
-  
-  if (stop < 0.0) {
-    return false;
-  }
-
-  return true;
+  return start <= angle || stop >= angle;
 }
 
 // to avoid realloc/GC
@@ -170,14 +164,6 @@ const isSegmentBehindOther = (thisSegment: Segment, otherSegment: Segment) => {
   const p2 = otherSegment.toCartesian;
 
   return isPointBehindLine(p1, p2, thisSegment.fromCartesian) && isPointBehindLine(p1, p2, thisSegment.toCartesian);
-}
-
-const normalizeTo2pi = (angle: number) => {
-  if (angle < -Math.PI)
-    return angle + M_2PI;
-  if (angle > Math.PI)
-    return angle - M_2PI;
-  return angle
 }
 
 // is this hidden by other
@@ -289,7 +275,6 @@ export const findVisibilityStripNoCache = (pos: vec2, lightParams: LightParamete
     const angle = getAngle(i)
 
     if (checkAngle && !angleBetweenAngles(angle, lightParams.angle! - halfWidth, lightParams.angle! + halfWidth)) {
-    //if (angle < lightParams.angle - halfWidth || angle > lightParams.angle + halfWidth) {
       resultBuffer[i] = 0.0;
     } else {
       const isec = findNearestIntersectingSegment(angle, sinBuffer[i], cosBuffer[i], segments);

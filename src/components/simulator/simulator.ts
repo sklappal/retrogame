@@ -2,7 +2,7 @@ import { GameState } from "../game/gamestate";
 import KeyCodes from '../game/keycodes'
 import { vec2 } from "gl-matrix";
 import { circle } from "../models/models";
-import { hslToRgb } from "../../utils/utils";
+import { hslToRgb, smoothstep, interpolate } from "../../utils/utils";
 import { ControlState } from "../Game";
 
 export const getSimulator = (gamestate: GameState, controlstate: ControlState, physicsTimeStepInSeconds: number) => {
@@ -116,10 +116,15 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState, p
     
     gamestate.camera.fieldOfView = Math.max(10.0, gamestate.camera.fieldOfView + controlstate.mouse.wheelDelta*-5.0);
     
-    gamestate.scene.lights[0].params.intensity = initialIntensity - 20 + 20*Math.cos(gamestate.gametime)
-    gamestate.scene.lights[0].params.color = hslToRgb((frameNumber / 1000.0) % 1.0, 1.0, 0.5);
-    gamestate.scene.lights[1].params.intensity = initialIntensity - 20 + 20*Math.cos(gamestate.gametime)
-    gamestate.scene.lights[1].params.color = hslToRgb((frameNumber / 1000.0) % 1.0, 1.0, 0.5);
+    const gt = (0.5*gamestate.gametime) % 1.0;
+
+    const w = 0.05;
+    const intensity = smoothstep(0.5-w, 0.5, gt) -smoothstep(0.5, 0.5+w, gt);
+
+    gamestate.scene.lights[0].params.intensity = intensity * initialIntensity;
+    gamestate.scene.lights[0].params.color = hslToRgb(gt, 1.0, 0.5);
+    gamestate.scene.lights[1].params.angle = interpolate(-Math.PI, Math.PI, gt);
+    gamestate.scene.lights[1].params.color = hslToRgb(gt, 1.0, 0.5);
 
   }
 

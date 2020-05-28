@@ -178,7 +178,7 @@ const getAttribute = (foo: SVGRectElement, name: string) => parseFloat(foo.getAt
 
 export const getGameState = () : GameState => {
   let scene = new SceneImpl();
-  const count = 10
+  const count = 4
   const width = 3
   const margin = 1
   for (let i = 0; i < count; i++) {

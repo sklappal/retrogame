@@ -212,43 +212,49 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
   }
 
 
-  const width = 1024;
-  const height = 4;
-  const pixels = new Float32Array(width*height);
+  const visibilityTextureWidth = 1024;
+  const visibilityTextureHeight = 4; // player visibility 1 player light 1 other lights 2
+  const visibilityPixels = new Float32Array(visibilityTextureWidth * visibilityTextureHeight);
 
-  const updateTextureOnGpu = (index: number) => {
+  const getSubArray = (index:number) => visibilityPixels.subarray(index*visibilityTextureWidth, (index+1) * visibilityTextureWidth)
+
+  const updateVisibilityTextureOnGpu = (index: number) => {
     const textureUnit = 0;
     gl.activeTexture(gl.TEXTURE0 + textureUnit)
     
-    gl.bindTexture(gl.TEXTURE_2D, myTexture);
+    gl.bindTexture(gl.TEXTURE_2D, visibilityTexture);
     
     const sampler = gl.getUniformLocation(programInfo.program, 'uSampler');
     gl.uniform1i(sampler, textureUnit);
     const xOffset = 0;
     const yOffset = index;
-    gl.texSubImage2D(gl.TEXTURE_2D, 0, xOffset, yOffset, width, 1, gl.RED, gl.FLOAT, pixels.subarray(index*width, (index+1)*width));
+    const height = 1;
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, xOffset, yOffset, visibilityTextureWidth, height, gl.RED, gl.FLOAT, getSubArray(index));
   }
 
-  const updateTexture = () => {
+  const updateVisibilityTexture = () => {
     // this one is used for visibility
-    if (findVisibilityStrip(-1, gamestate.player.pos, {...gamestate.player.light, angle: undefined, angularWidth: undefined}, gamestate.scene.staticObjects, pixels.subarray(0, width))) {
-      updateTextureOnGpu(0);
+    // here we fake the intensity to a canvas size dependent intensity so that the visibility calculation works correctly
+    const intensity = Math.max(canvasHelper.widthWorld(), canvasHelper.heightWorld());
+
+    if (findVisibilityStrip(-1, gamestate.player.pos, {...gamestate.player.light, intensity: intensity*intensity / 1000.0, angle: undefined, angularWidth: undefined}, gamestate.scene.staticObjects, getSubArray(0))) {
+      updateVisibilityTextureOnGpu(0);
     }
     
     // this one is used for player light
-    if (findVisibilityStrip(gamestate.player.id, gamestate.player.pos, gamestate.player.light, gamestate.scene.staticObjects, pixels.subarray(width, 2*width))) {
-      updateTextureOnGpu(1);
+    if (findVisibilityStrip(gamestate.player.id, gamestate.player.pos, gamestate.player.light, gamestate.scene.staticObjects, getSubArray(1))) {
+      updateVisibilityTextureOnGpu(1);
     }
 
     for (let i = 0; i < gamestate.scene.lights.length; i++) {
       const light = gamestate.scene.lights[i];
-      if (findVisibilityStrip(light.id, light.pos, light.params, gamestate.scene.staticObjects, pixels.subarray((i+2)*width, (i+3)*width))) {
-        updateTextureOnGpu(i+2);
+      if (findVisibilityStrip(light.id, light.pos, light.params, gamestate.scene.staticObjects, getSubArray(i+2))) {
+        updateVisibilityTextureOnGpu(i+2);
       }
     }
   }
 
-  const initTexture = () => {
+  const initVisibilityTexture = () => {
     const texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
   
@@ -259,8 +265,8 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
     const srcType = gl.FLOAT;
     
     gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
-                  width, height, border, srcFormat, srcType,
-                  pixels);
+                  visibilityTextureWidth, visibilityTextureHeight, border, srcFormat, srcType,
+                  null);
 
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
@@ -270,7 +276,7 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
   };
  
   const programInfo = initProgram()!;
-  const myTexture = initTexture();
+  const visibilityTexture = initVisibilityTexture();
   
  
   if (!programInfo) {
@@ -286,7 +292,7 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
     width: canvasHelper.width,
     height: canvasHelper.height,
     draw: () => {
-      updateTexture();
+      updateVisibilityTexture();
       drawScene();
 
     }

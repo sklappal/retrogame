@@ -1,7 +1,7 @@
 import { vec2 } from 'gl-matrix'
 import { Rect, Model, Circle } from '../models/models';
 import { StaticObject, LightParameters } from '../game/gamestate';
-import { VisibilityCacheItem, VisibilityCache, getVisibilityStripCache } from './visibilityStripCache';
+import { VisibilityCache, getVisibilityStripCache } from './visibilityStripCache';
 
 interface Segment {
   id: number
@@ -163,16 +163,6 @@ export const isPointBehindLine = (p1: vec2, p2: vec2, p: vec2) => {
   return ((p[0]-p1[0])*(p2[1]-p1[1]) - (p[1]-p1[1])*(p2[0]-p1[0])) > 0.0
 }
 
-// from origin
-const distanceToSegmentSquared = (p1: vec2, p2: vec2) => {
-  
-  const distanceSquared = vec2.squaredDistance(p1, p2);
-  var t = ((- p1[0]) * (p2[0] - p1[0]) + (- p1[1]) * (p2[1] - p1[1])) / distanceSquared;
-  t = Math.max(0, Math.min(1, t));
-  return  vec2.sqrLen([p1[0] + t * (p2[0] - p1[0]),
-                    p1[1] + t * (p2[1] - p1[1])]);
-}
-
 export const toCartesian = (v: vec2) => vec2.fromValues(v[0] * Math.cos(v[1]), v[0] * Math.sin(v[1]));
 
 const isSegmentBehindOther = (thisSegment: Segment, otherSegment: Segment) => {
@@ -213,31 +203,37 @@ export const isSegmentOccluded = (thisSegment: Segment, otherSegment: Segment) =
 }
 
 const purgeOccludedSegments = (segments : ReadonlyArray<Segment>) => {
-  const ret = [];
+  const occludedSegments = new Map<number, boolean>();
   for (var i = 0; i < segments.length; i++) {
-    let hidden = false;
-    const thisPair = segments[i]
-// TODO: This can further be optimized. If thisPair is hidden, it can't hide other pairs, or some other pair would hide the pair it hides etc
+    
+    const candidateOccluder = segments[i]
+    if (occludedSegments.has(candidateOccluder.id)) {
+      continue;
+    }
     for (var j = 0; j < segments.length; j++) {
       if (i !== j) {
-        const otherPair = segments[j]
+        const candidateOccluded = segments[j]
         
-        if (isSegmentOccluded(thisPair, otherPair)) {
-          hidden = true;
-          break;
+        if (isSegmentOccluded(candidateOccluded, candidateOccluder)) {
+          occludedSegments.set(candidateOccluded.id, true);
         }
       }
     }
-    
-    if (!hidden) {
-      ret.push(thisPair)
-
-    }
   }
-  return ret
+  return segments.filter(x => !occludedSegments.has(x.id))
 
 }
 
+// calculates an upper bound approximation for the distance
+const distanceApproximation = (obj: StaticObject, playerPos: vec2) => {
+  const manhattan = Math.abs(obj.pos[0] - playerPos[0]) + Math.abs(obj.pos[1] + playerPos[1])
+  if (obj.model.kind === 'rect') {
+    const rect = obj.model.shape as Rect;
+    return manhattan + Math.max(rect.width, rect.height) * 0.5;
+  }
+  const circle = obj.model.shape as Circle;
+  return manhattan + circle.radius;
+}
 
 let sinBuffer: number[] = [];
 let cosBuffer: number[] = [];
@@ -245,11 +241,10 @@ let cosBuffer: number[] = [];
 let cache: VisibilityCache = getVisibilityStripCache();
 
 export const findVisibilityStripNoCache = (pos: vec2, lightParams: LightParameters, items: ReadonlyArray<StaticObject>, resultBuffer: Float32Array) => {
-
-  const elementSegments = items.map(element => findElementSegments(element.pos, element.model, pos));
-
-  const radiusSquared = lightParams.intensity * 10.0; // This is from this eq: Math.sqrt(lightParams.intensity * 10.0) * Math.sqrt(lightParams.intensity * 10.0)
-  elementSegments.filter(el => distanceToSegmentSquared(el[0], el[1]) < radiusSquared)
+  const radius =  Math.sqrt(lightParams.intensity * 1000.0); // This is from this eq:  c = i/d^2 < 0.001 <=> i/0.001 < d^2 <=> sqrt(1000i) < d
+  
+  const filtered = items.filter(el => distanceApproximation(el, pos) < radius)
+  const elementSegments = filtered.map(element => findElementSegments(element.pos, element.model, pos));
 
   const segmentsNonPurged = elementSegments.map((rayPair, i) => {
     const r0 = toPolar(rayPair[0])
@@ -265,8 +260,12 @@ export const findVisibilityStripNoCache = (pos: vec2, lightParams: LightParamete
     return {from: r0, fromCartesian: rayPair[0], to: r1, toCartesian: rayPair[1], id: i}
   })
 
-  const segments = purgeOccludedSegments(segmentsNonPurged);
- 
+  const sortedSegments = segmentsNonPurged.sort((a, b) => (a.from[0] + a.to[0]) - (b.from[0] + b.to[0]));
+
+  const segments = purgeOccludedSegments(sortedSegments);
+
+  //console.log("original segments", items.length, "distance filtered", filtered.length, "occlusion filtered", segments.length)
+
   const getAngle = (i:number) => ((i) / resultBuffer.length) * M_2PI - Math.PI;
 
   if (sinBuffer.length !== resultBuffer.length) {

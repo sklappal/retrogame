@@ -47,6 +47,8 @@ export const startGame = (renderingHandler: RenderingHandler, gamestate: GameSta
   let frameNumber = 0;
   
   const tick = () => {
+    requestAnimFrame(tick);
+    
     timeHandler.startFrame();
 
     if (timeHandler.getAccumulator() > 100 * PHYSICS_TIME_STEP) // just skip time
@@ -66,8 +68,6 @@ export const startGame = (renderingHandler: RenderingHandler, gamestate: GameSta
 
     // assumption that these guys below don't used clicked states as they are cleared in clearClickedButtons. Let's see.
     renderingHandler.draw();
-    
-    requestAnimFrame(tick);
   }
   tick();
 }

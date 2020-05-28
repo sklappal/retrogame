@@ -7,6 +7,8 @@ export interface CanvasHelper {
   getWebGLContext(): WebGL2RenderingContext
   width(): number
   height(): number
+  widthWorld(): number
+  heightWorld(): number
   canvas2world(vec: vec2): vec2
   world2canvasLength(n: number): number
   world2canvas(vec: vec2): vec2
@@ -34,6 +36,10 @@ export const getCanvasHelper = (canvas: HTMLCanvasElement, camera: Camera) => {
   const width = () => getCanvas().width;
 
   const height = () => getCanvas().height;
+
+  const widthWorld = () => width() / pixelSize();
+
+  const heightWorld = () => height() / pixelSize();
 
   const pixelSize = () => defaultPixelCount / camera.fieldOfView;
 
@@ -72,6 +78,8 @@ export const getCanvasHelper = (canvas: HTMLCanvasElement, camera: Camera) => {
     getCanvas: getCanvas,
     width: width,
     height: height,
+    widthWorld: widthWorld,
+    heightWorld: heightWorld,
     world2canvas: world2canvas,
     world2canvasLength: world2canvasLength,
     canvas2world: canvas2world,

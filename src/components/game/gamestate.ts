@@ -85,7 +85,7 @@ const playerDefault = {
   pos: vec2.fromValues(0.0, 0.0),
   light: {
     color: randomColor(),
-    intensity: 1.0,
+    intensity: 0.1,
     angle: 0.0,
     angularWidth: 0.2*Math.PI
   },
@@ -128,27 +128,7 @@ export class GameStateImpl implements GameState {
 }
 
 export class SceneImpl implements Scene {
-  lights: Light[] = [
-    {
-      id: getObjectId(),
-      pos: vec2.fromValues(10.0, 10.0),
-      params: {
-        color: vec3.fromValues(0.4, 0.4, 0.0),
-        intensity: 0.0
-      }
-    },
-    {
-      id: getObjectId(),
-      pos: vec2.fromValues(-20.0, 0.0),
-      params: {
-        color: vec3.fromValues(0.4, 0.4, 0.0),
-        intensity: 0.0,
-        angle: 0.0,
-        angularWidth: 0.1*Math.PI
-      }
-    }
-  ];
-  
+  lights: Light[] = []
   staticObjects: StaticObject[] = []
   
   dynamicObjects: DynamicObject[] = []
@@ -184,8 +164,8 @@ export class SceneImpl implements Scene {
         id: getObjectId(),
         pos: pos,
         params: {
-          color: vec3.fromValues(0.4, 0.4, 0.0),
-          intensity: 1.0
+          color: randomColor(),
+          intensity: 0.1
         }
       })
   }

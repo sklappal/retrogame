@@ -26,7 +26,7 @@ export const generateScene = (seed: string) => {
   const randomGenerator = getRandomGenerator(seed);
   
 
-  const count = 40;
+  const count = 20;
 
   
   const delaunay = getDelaunay(count, randomGenerator);
@@ -58,6 +58,14 @@ export const generateScene = (seed: string) => {
     
     scene.createStaticObject(pos, rect(scale * r.side, scale * r.side));
     //scene.createStaticObject(pos, circle(scale * r.side*0.5)); for inspiration
+  }
+
+  let lightCount = 0;
+  for (let node of graph.nodes) {
+    lightCount++;
+    if (lightCount > 40)
+      break;
+    scene.createLight(gridToWorld(node.i, node.j))
   }
 
   return {scene: scene, graph: minSpanningTree};

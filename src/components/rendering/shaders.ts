@@ -25,14 +25,15 @@ export const vertexShaderSource = `#version 300 es
   precision highp float;
 
   #define M_PI 3.1415926535897932384626433832795
-  #define NUM_LIGHTS 3
+  #define NUM_LIGHTS 50
 
   in vec2 posWorld;
   
   uniform vec2 uLightPositionsWorld[NUM_LIGHTS];
   uniform vec3 uLightColors[NUM_LIGHTS];
   uniform float uLightIntensities[NUM_LIGHTS];
-  
+  uniform int uActualNumberOfLights;
+
   uniform vec4 uColor;
   
   uniform sampler2D uSampler;
@@ -100,11 +101,12 @@ export const vertexShaderSource = `#version 300 es
     float playerLightMultiplier = getShadowMultiplier(0, 0, posWorld, uSampler);
         
     vec3 light = vec3(0.0);
-    for (int i = 0; i < NUM_LIGHTS; i++) {
+    for (int i = 0; i < uActualNumberOfLights; i++) {
       light += getLighting(i, posWorld, uSampler) * playerLightMultiplier;
     }
 
-    vec3 ambientLight = vec3(0.1, 0.1, 0.1);
+    float dist = distance(posWorld, uLightPositionsWorld[0]);
+    vec3 ambientLight = vec3(0.01, 0.01, 0.01) * 2.0/(dist*dist);
     
     fragmentColor = worldColor * vec4(toneMap(light  + ambientLight) , 1.0);
   }

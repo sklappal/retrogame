@@ -104,7 +104,8 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
     const uniforms = {
       uPlayerPositionWorld: gamestate.player.pos,
       uViewMatrix: canvasHelper.world2viewMatrix(),
-      uProjectionMatrix: canvasHelper.view2ndcMatrix()
+      uProjectionMatrix: canvasHelper.view2ndcMatrix(),
+      uActualNumberOfLights: gamestate.scene.lights.length + 1 // player light
     }
     
     twgl.setUniforms(programInfo, uniforms);
@@ -213,7 +214,7 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
 
 
   const visibilityTextureWidth = 1024;
-  const visibilityTextureHeight = 4; // player visibility 1 player light 1 other lights 2
+  const visibilityTextureHeight = 50; // player visibility 1 player light 1 other lights 2
   const visibilityPixels = new Float32Array(visibilityTextureWidth * visibilityTextureHeight);
 
   const getSubArray = (index:number) => visibilityPixels.subarray(index*visibilityTextureWidth, (index+1) * visibilityTextureWidth)

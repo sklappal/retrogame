@@ -85,7 +85,7 @@ const playerDefault = {
   pos: vec2.fromValues(0.0, 0.0),
   light: {
     color: randomColor(),
-    intensity: 0.0,
+    intensity: 1.0,
     angle: 0.0,
     angularWidth: 0.2*Math.PI
   },
@@ -177,6 +177,18 @@ export class SceneImpl implements Scene {
       creationTime: creationTime
     });
   }
+
+  createLight(pos: vec2) {
+    this.lights.push(
+      {
+        id: getObjectId(),
+        pos: pos,
+        params: {
+          color: vec3.fromValues(0.4, 0.4, 0.0),
+          intensity: 1.0
+        }
+      })
+  }
 }
 
 const getAttribute = (foo: SVGRectElement, name: string) => parseFloat(foo.getAttribute(name)!)*0.5;
@@ -184,7 +196,7 @@ const getAttribute = (foo: SVGRectElement, name: string) => parseFloat(foo.getAt
 
 export const getGameState = () : GameState => {
 
-
+  // const scene = new SceneImpl();
   // const count = 4
   // const width = 3
   // const margin = 1
@@ -205,17 +217,8 @@ export const getGameState = () : GameState => {
   //   );
   // }
 
-  /*const svg = document.createElement('svg');
-  svg.innerHTML = svgString;
-  
-  // <rect id="svg_5" height="117" width="23" y="137.450012" x="110.5" fill-opacity="null" stroke-opacity="null" stroke-width="1.5" stroke="#000" fill="#fff"/>
-  const items = Array.from(svg.getElementsByTagName('rect')).map(r => {
-    const w = getAttribute(r, "width")
-    const h = getAttribute(r, "height")
-    return createObject(
-      vec2.fromValues(getAttribute(r, "x") + w*0.5, getAttribute(r, "y") + h*0.5),
-      rect(w, h, "black") )
-  });*/
+  // return new GameStateImpl(scene, {nodes: [], edges: [], getNode: (id:number) => {return {id: 0, i:0, j:0}}})
+
 
   const generated = generateScene(Math.random().toString());
   return new GameStateImpl(generated.scene, generated.graph);

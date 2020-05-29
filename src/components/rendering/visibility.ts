@@ -212,7 +212,7 @@ const purgeOccludedSegments = (segments : ReadonlyArray<Segment>) => {
 
 // calculates an upper bound approximation for the distance
 const distanceApproximation = (obj: StaticObject, playerPos: vec2) => {
-  const manhattan = Math.abs(obj.pos[0] - playerPos[0]) + Math.abs(obj.pos[1] + playerPos[1])
+  const manhattan = Math.abs(obj.pos[0] - playerPos[0]) + Math.abs(obj.pos[1] - playerPos[1])
   if (obj.model.kind === 'rect') {
     const rect = obj.model.shape as Rect;
     return manhattan + Math.max(rect.width, rect.height) * 0.5;

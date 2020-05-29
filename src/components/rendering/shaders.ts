@@ -104,7 +104,7 @@ export const vertexShaderSource = `#version 300 es
       light += getLighting(i, posWorld, uSampler) * playerLightMultiplier;
     }
 
-    vec3 ambientLight = vec3(0.001, 0.001, 0.001);
+    vec3 ambientLight = vec3(0.1, 0.1, 0.1);
     
     fragmentColor = worldColor * vec4(toneMap(light  + ambientLight) , 1.0);
   }

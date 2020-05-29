@@ -121,10 +121,10 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState, p
     const w = 0.05;
     const intensity = smoothstep(0.5-w, 0.5, gt) -smoothstep(0.5, 0.5+w, gt);
 
-    gamestate.scene.lights[0].params.intensity = intensity * initialIntensity;
-    gamestate.scene.lights[0].params.color = hslToRgb(gt, 1.0, 0.5);
-    gamestate.scene.lights[1].params.angle = interpolate(-Math.PI, Math.PI, gt);
-    gamestate.scene.lights[1].params.color = hslToRgb(gt, 1.0, 0.5);
+    // gamestate.scene.lights[0].params.intensity = intensity * initialIntensity;
+    // gamestate.scene.lights[0].params.color = hslToRgb(gt, 1.0, 0.5);
+    // gamestate.scene.lights[1].params.angle = interpolate(-Math.PI, Math.PI, gt);
+    // gamestate.scene.lights[1].params.color = hslToRgb(gt, 1.0, 0.5);
 
   }
 

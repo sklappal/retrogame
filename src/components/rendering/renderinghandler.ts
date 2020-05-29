@@ -22,8 +22,18 @@ export const getRenderingHandler = (
   }
   
   const drawGraph = () => {
+    const count = 20;
     const scale = 2.0;
-    const offset = -10;
+    const offset = -count*0.5;
+
+    const subdivisions = 5;
+    
+    for (let i = 0; i <= 20 * subdivisions; i++) {
+      overlayRenderer.drawLine([offset * scale, (i/subdivisions + offset) * scale], [-offset*scale, (i/subdivisions + offset) * scale], "#222222")
+      overlayRenderer.drawLine([(i/subdivisions + offset) * scale, offset * scale], [(i/subdivisions + offset) * scale, -offset*scale, ], "#222222")
+    }
+
+
     for (let edge of gamestate.graph.edges) {
       const node1 = gamestate.graph.getNode(edge.from)
       const node2 = gamestate.graph.getNode(edge.to)
@@ -41,7 +51,7 @@ export const getRenderingHandler = (
 
       drawOverlay();
 
-      drawGraph();
+   //   drawGraph();
 
     }
   }

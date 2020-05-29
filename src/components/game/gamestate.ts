@@ -1,6 +1,7 @@
 import { vec2, vec3 } from 'gl-matrix'
 import { Model, rect, circle } from '../models/models'
-import { randomColor } from '../../utils/utils';
+import { randomColor, getRandomGenerator } from '../../utils/utils';
+import { generateScene, Graph } from './mapgenerator';
 //import { svgString } from './svg'
 
 const getObjectId = (() => {
@@ -72,6 +73,7 @@ export interface GameState {
   config: Config
   gametime: number
   fps: number
+  graph: Graph
 
   createDynamicObject(thisPos: vec2, velocity: vec2, model: Model): void
 
@@ -83,7 +85,7 @@ const playerDefault = {
   pos: vec2.fromValues(0.0, 0.0),
   light: {
     color: randomColor(),
-    intensity: 0.5,
+    intensity: 0.0,
     angle: 0.0,
     angularWidth: 0.2*Math.PI
   },
@@ -95,8 +97,9 @@ const playerDefault = {
 }
 
 export class GameStateImpl implements GameState {
-  constructor(scene: SceneImpl) {
+  constructor(scene: SceneImpl, graph: Graph) {
     this.scene = scene;
+    this.graph = graph;
   }
 
   player: Player = playerDefault;
@@ -109,6 +112,7 @@ export class GameStateImpl implements GameState {
   config: Config = {debug: false}
   gametime: number = 0;
   fps: number = 60.0;
+  graph: Graph
   
   createDynamicObject(thisPos: vec2, velocity: vec2, model: Model): void {
     this.scene.createDynamicObject(thisPos, velocity, model, this.gametime);
@@ -130,7 +134,7 @@ export class SceneImpl implements Scene {
       pos: vec2.fromValues(10.0, 10.0),
       params: {
         color: vec3.fromValues(0.4, 0.4, 0.0),
-        intensity: 0.5
+        intensity: 0.0
       }
     },
     {
@@ -138,7 +142,7 @@ export class SceneImpl implements Scene {
       pos: vec2.fromValues(-20.0, 0.0),
       params: {
         color: vec3.fromValues(0.4, 0.4, 0.0),
-        intensity: 1.0,
+        intensity: 0.0,
         angle: 0.0,
         angularWidth: 0.1*Math.PI
       }
@@ -179,26 +183,27 @@ const getAttribute = (foo: SVGRectElement, name: string) => parseFloat(foo.getAt
 
 
 export const getGameState = () : GameState => {
-  let scene = new SceneImpl();
-  const count = 4
-  const width = 3
-  const margin = 1
-  for (let i = 0; i < count; i++) {
-    for (let j = 0; j < count; j++) {
-      scene.createStaticObject(
-        vec2.fromValues((i-count/2) * (width + 2*margin) + margin + width*0.5, (j-count/2) *(width + 2*margin) + margin + width*0.5),
-        rect( width, width, "black")
-        );
-    }
-  }
 
-  for (let i = 0; i < 12; i++) {
-    const angle = i * 2 * Math.PI / 12;
-    scene.createStaticObject(
-      vec2.fromValues(Math.cos(angle) * 60.0 , Math.sin(angle) * 60.0),
-      circle(10.0, "black")
-    );
-  }
+
+  // const count = 4
+  // const width = 3
+  // const margin = 1
+  // for (let i = 0; i < count; i++) {
+  //   for (let j = 0; j < count; j++) {
+  //     scene.createStaticObject(
+  //       vec2.fromValues((i-count/2) * (width + 2*margin) + margin + width*0.5, (j-count/2) *(width + 2*margin) + margin + width*0.5),
+  //       rect( width, width, "black")
+  //       );
+  //   }
+  // }
+
+  // for (let i = 0; i < 12; i++) {
+  //   const angle = i * 2 * Math.PI / 12;
+  //   scene.createStaticObject(
+  //     vec2.fromValues(Math.cos(angle) * 60.0 , Math.sin(angle) * 60.0),
+  //     circle(10.0, "black")
+  //   );
+  // }
 
   /*const svg = document.createElement('svg');
   svg.innerHTML = svgString;
@@ -212,5 +217,6 @@ export const getGameState = () : GameState => {
       rect(w, h, "black") )
   });*/
 
-  return new GameStateImpl(scene);
+  const generated = generateScene(Math.random().toString());
+  return new GameStateImpl(generated.scene, generated.graph);
 }

@@ -1,8 +1,8 @@
-import { GameState } from "../game/gamestate";
-import KeyCodes from '../game/keycodes'
+import { GameState, Light } from "../game/gamestate";
+import KeyCodes, { KEY_P } from '../game/keycodes'
 import { vec2 } from "gl-matrix";
 import { circle } from "../models/models";
-import { hslToRgb, smoothstep, interpolate } from "../../utils/utils";
+import { smoothstep } from "../../utils/utils";
 import { ControlState } from "../Game";
 
 export const getSimulator = (gamestate: GameState, controlstate: ControlState, physicsTimeStepInSeconds: number) => {
@@ -57,6 +57,23 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState, p
       const aimAngle = gamestate.player.aimAngle;
       const dir = vec2.scale(vec2.create(), vec2.fromValues(Math.cos(aimAngle), Math.sin(aimAngle)), 0.5)
       gamestate.createDynamicObject(gamestate.player.pos, dir, circle(0.2, "blue"))
+    }
+
+    if (controlstate.mouse.buttonsClicked.has(0)) {
+      let d = 10000;
+      let l:Light;
+      for (let i = 0; i < gamestate.scene.lights.length; i++) {
+        let cd = vec2.dist(gamestate.scene.lights[i].pos, controlstate.mouse.pos());
+        if (cd < d) {
+          d = cd;
+          l = gamestate.scene.lights[i];
+        }
+      }
+      gamestate.config.debug.light_index_in_focus = gamestate.config.debug.light_index_in_focus == l!.id ? -1 : l!.id
+    }
+
+    if (controlstate.keyboard.buttonsClicked.has(KEY_P)) {
+      gamestate.config.debug.debug_on = !gamestate.config.debug.debug_on;
     }
 
   }
@@ -114,7 +131,7 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState, p
 
     gamestate.removeOlderDynamicObjects(5.0);
     
-    gamestate.camera.fieldOfView = Math.max(10.0, gamestate.camera.fieldOfView + controlstate.mouse.wheelDelta*-5.0);
+    gamestate.camera.fieldOfView = Math.max(10.0, gamestate.camera.fieldOfView - controlstate.mouse.wheelDelta*10.0);
     
     const gt = (0.5*gamestate.gametime) % 1.0;
 

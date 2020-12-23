@@ -63,6 +63,9 @@ export const hslToRgb = (h:number, s:number, l:number) => {
 export const randomColor = () => {
   return hslToRgb(Math.random(), 1.0, 0.5);
 }
+export const randomColorG = (random: () => number) => {
+  return hslToRgb(random(), 1.0, 0.5);
+}
 
 // https://stackoverflow.com/questions/521295/seeding-the-random-number-generator-in-javascript/47593316#47593316
 

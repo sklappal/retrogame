@@ -69,8 +69,7 @@ export const vertexShaderSource = `#version 300 es
 
   float sampleTextureAtAngle(float angle, sampler2D sampler, int textureIndex) {
     float samplingLocation = float(round(  ((angle + M_PI) / (2.0 * M_PI)) * 1024.0) / 1024.0);
-
-    float floatIndex = (float(textureIndex) + 0.5) * (1.0 / float(NUM_LIGHTS + 1));
+    float floatIndex = (float(textureIndex) + 0.5) * (1.0 / float(NUM_LIGHTS));
 
     return texture(sampler, vec2(samplingLocation, floatIndex)).r;
   }
@@ -85,8 +84,8 @@ export const vertexShaderSource = `#version 300 es
     for (int i = 0; i < 9; i++) {
       sum += sampleTextureAtAngle(angle+(float(i)-4.0)*delta, sampler, textureIndex) > lightDistance ? 1.0 : 0.0;
     }
-
-    return sum / 9.0;
+    
+    return (sum / 9.0);
   }
 
   vec3 getLighting(int index, vec2 currentPos, sampler2D sampler) {

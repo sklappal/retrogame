@@ -25,15 +25,11 @@ export type Graph = {
 export const generateScene = (seed: string) => {
   const randomGenerator = getRandomGenerator(seed);
   
-
   const count = 20;
-
   
   const delaunay = getDelaunay(count, randomGenerator);
-  
 
   const graph = getGraph(delaunay, randomGenerator);
-
 
   const minSpanningTree = getSpanningTree(graph, randomGenerator);
 
@@ -41,8 +37,7 @@ export const generateScene = (seed: string) => {
 
   const grid = getGrid(minSpanningTree, count, subdivisions)
 
-   const rects = findRects(grid, subdivisions)
-  
+  const rects = findRects(grid, subdivisions)
 
   const scale = 40.0;
   const offset = vec2.fromValues(-graph.nodes[0].i, -graph.nodes[0].j)
@@ -65,11 +60,10 @@ export const generateScene = (seed: string) => {
     lightCount++;
     if (lightCount > 40)
       break;
-    scene.createLight(gridToWorld(node.i, node.j))
+    scene.createLight(gridToWorld(node.i, node.j), () => randomGenerator())
   }
 
   return {scene: scene, graph: minSpanningTree};
-
 
 }
 

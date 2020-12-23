@@ -1,6 +1,6 @@
 import { vec2, vec3 } from 'gl-matrix'
 import { Model, rect, circle } from '../models/models'
-import { randomColor, getRandomGenerator } from '../../utils/utils';
+import { randomColor, getRandomGenerator, randomColorG } from '../../utils/utils';
 import { generateScene, Graph } from './mapgenerator';
 //import { svgString } from './svg'
 
@@ -43,8 +43,13 @@ export interface Camera   {
   fieldOfView: number
 }
 
+export interface Debug {
+  debug_on: boolean
+  light_index_in_focus: number
+}
+
 export interface Config {
-  debug: boolean
+  debug: Debug
 }
 
 export interface StaticObject {
@@ -109,11 +114,11 @@ export class GameStateImpl implements GameState {
         fieldOfView: 40.0
       }
   scene: SceneImpl
-  config: Config = {debug: false}
+  config: Config = {debug: {debug_on: false, light_index_in_focus: -1}};
   gametime: number = 0;
   fps: number = 60.0;
   graph: Graph
-  
+
   createDynamicObject(thisPos: vec2, velocity: vec2, model: Model): void {
     this.scene.createDynamicObject(thisPos, velocity, model, this.gametime);
   }
@@ -158,14 +163,13 @@ export class SceneImpl implements Scene {
     });
   }
 
-  createLight(pos: vec2) {
-    this.lights.push(
-      {
+  createLight(pos: vec2, random: () => number) {
+    this.lights.push({
         id: getObjectId(),
         pos: pos,
         params: {
-          color: randomColor(),
-          intensity: 0.1
+          color: randomColorG(random),
+          intensity: 0.9
         }
       })
   }

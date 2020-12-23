@@ -227,10 +227,8 @@ let cosBuffer: number[] = [];
 let cache: VisibilityCache = getVisibilityStripCache();
 
 export const findVisibilityStripNoCache = (pos: vec2, lightParams: LightParameters, items: ReadonlyArray<StaticObject>, resultBuffer: Float32Array) => {
-  const radius =  Math.sqrt(lightParams.intensity * 1000.0); // This is from this eq:  c = i/d^2 < 0.001 <=> i/0.001 < d^2 <=> sqrt(1000i) < d
-  
-  const filtered = items.filter(el => distanceApproximation(el, pos) < radius)
-  const elementSegments = filtered.map(element => findElementSegments(element.pos, element.model, pos));
+    
+  const elementSegments = items.map(element => findElementSegments(element.pos, element.model, pos));
 
   const segmentsNonPurged = elementSegments.map((rayPair, i) => {
     const r0 = toPolar(rayPair[0])
@@ -284,6 +282,8 @@ export const findVisibilityStripNoCache = (pos: vec2, lightParams: LightParamete
 }
 
 export const findVisibilityStrip = (lightId: number, pos: vec2, lightParams: LightParameters, items: ReadonlyArray<StaticObject>, resultBuffer: Float32Array) => {
+  
+  // Note that the intensity of the light does not play a role here, it's a leftover from the past
   if (cache.isInCache({id: lightId, pos, angle: lightParams.angle, angularWidth: lightParams.angularWidth})) {
     return false;
   }

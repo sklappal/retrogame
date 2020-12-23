@@ -2,7 +2,7 @@ import { getRandomGenerator } from "../../utils/utils"
 import { SceneImpl } from "./gamestate";
 import {Delaunay} from "d3-delaunay";
 import { vec2 } from "gl-matrix";
-import { rect, circle } from "../models/models";
+import { rect } from "../models/models";
 
 
 type Node = {

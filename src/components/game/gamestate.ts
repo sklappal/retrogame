@@ -1,6 +1,6 @@
 import { vec2, vec3 } from 'gl-matrix'
-import { Model, rect, circle } from '../models/models'
-import { randomColor, getRandomGenerator, randomColorG } from '../../utils/utils';
+import { Model, circle } from '../models/models'
+import { randomColor, randomColorG } from '../../utils/utils';
 import { generateScene, Graph } from './mapgenerator';
 //import { svgString } from './svg'
 
@@ -175,6 +175,7 @@ export class SceneImpl implements Scene {
   }
 }
 
+/* eslint-disable-next-line */
 const getAttribute = (foo: SVGRectElement, name: string) => parseFloat(foo.getAttribute(name)!)*0.5;
 
 

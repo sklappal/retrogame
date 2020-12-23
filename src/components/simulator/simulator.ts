@@ -1,8 +1,7 @@
 import { GameState, Light } from "../game/gamestate";
-import KeyCodes, { KEY_P } from '../game/keycodes'
+import KeyCodes, { KEY_P, KEY_SHIFT } from '../game/keycodes'
 import { vec2 } from "gl-matrix";
 import { circle } from "../models/models";
-import { smoothstep } from "../../utils/utils";
 import { ControlState } from "../Game";
 
 export const getSimulator = (gamestate: GameState, controlstate: ControlState, physicsTimeStepInSeconds: number) => {
@@ -21,7 +20,7 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState, p
     const nonNormalized = vec2.fromValues(getMovemement(xkey1, xkey2, controlstate), getMovemement(ykey1, ykey2, controlstate));
     if (nonNormalized[0] === 0 && nonNormalized[1] === 0)
       return nonNormalized;
-  
+
     return vec2.scale(vec2.create(), vec2.normalize(vec2.create(), nonNormalized), speed);
   }
 
@@ -49,7 +48,13 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState, p
     if (playerAcceleration[1] === 0.0) gamestate.player.velocity[1] *= FRICTION_COEFFICIENT;
 
     vec2.add(gamestate.player.velocity, gamestate.player.velocity, playerAcceleration)
-    clamp(gamestate.player.velocity, gamestate.player.maxSpeed)
+
+    let multip = 1.0;
+    if (controlstate.keyboard.buttonsPressed.has(KEY_SHIFT)) {
+      multip = 5.0;
+    }
+
+    clamp(gamestate.player.velocity, gamestate.player.maxSpeed * multip)
     
 
     // Player actions
@@ -69,7 +74,7 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState, p
           l = gamestate.scene.lights[i];
         }
       }
-      gamestate.config.debug.light_index_in_focus = gamestate.config.debug.light_index_in_focus == l!.id ? -1 : l!.id
+      gamestate.config.debug.light_index_in_focus = gamestate.config.debug.light_index_in_focus === l!.id ? -1 : l!.id
     }
 
     if (controlstate.keyboard.buttonsClicked.has(KEY_P)) {
@@ -121,8 +126,6 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState, p
     })
   }
 
-  const initialIntensity = gamestate.scene.lights[0].params.intensity;
-
   const simulate = (frameNumber: number) => {
     handleInputs();
     handleCamera();
@@ -133,10 +136,10 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState, p
     
     gamestate.camera.fieldOfView = Math.max(10.0, gamestate.camera.fieldOfView - controlstate.mouse.wheelDelta*10.0);
     
-    const gt = (0.5*gamestate.gametime) % 1.0;
+    // const gt = (0.5*gamestate.gametime) % 1.0;
 
-    const w = 0.05;
-    const intensity = smoothstep(0.5-w, 0.5, gt) -smoothstep(0.5, 0.5+w, gt);
+    // const w = 0.05;
+    // const intensity = smoothstep(0.5-w, 0.5, gt) -smoothstep(0.5, 0.5+w, gt);
 
     // gamestate.scene.lights[0].params.intensity = intensity * initialIntensity;
     // gamestate.scene.lights[0].params.color = hslToRgb(gt, 1.0, 0.5);

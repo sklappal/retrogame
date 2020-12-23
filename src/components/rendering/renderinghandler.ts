@@ -1,5 +1,5 @@
 import { PrimitiveRenderer } from './primitiverenderer'
-import { GameState, Light } from '../game/gamestate';
+import { GameState } from '../game/gamestate';
 import { GpuRenderer } from './gpurenderer';
 import { vec2 } from 'gl-matrix';
 import { findVisibilityStripNoCache } from './visibility';
@@ -22,7 +22,8 @@ export const getRenderingHandler = (
     var text = "FPS: " + gamestate.fps.toFixed(1)   
     overlayRenderer.drawTextCanvas([overlayRenderer.width()-120, overlayRenderer.height()-40], text)
   }
-  
+    
+/* eslint-disable-next-line */
   const drawGraph = () => {
     const count = 20;
     const scale = 2.0;
@@ -49,8 +50,8 @@ export const getRenderingHandler = (
 
   const drawDebug = () => {
     if (gamestate.config.debug.debug_on) {
-      if (gamestate.config.debug.light_index_in_focus != -1) {
-        let light = gamestate.scene.lights.filter(x => x.id == gamestate.config.debug.light_index_in_focus)[0];
+      if (gamestate.config.debug.light_index_in_focus !== -1) {
+        let light = gamestate.scene.lights.filter(x => x.id === gamestate.config.debug.light_index_in_focus)[0];
   
         overlayRenderer.drawCircle(light.pos, 2.0, "red");
   

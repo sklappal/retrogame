@@ -51,8 +51,6 @@ export const getPrimitiveRenderer = (canvasHelper: CanvasHelper) => {
     ctx.fillRect(posCanvas[0], posCanvas[1], canvasHelper.world2canvasLength(w), canvasHelper.world2canvasLength(h));
   }
   
-  const drawSquare = (pos: vec2, w: number, color = "black") => drawRect(pos, w, w, color)
-
   const drawLine = (from: vec2, to: vec2, color = "black") => {
     const fromCanvas = canvasHelper.world2canvas(from)
     const toCanvas = canvasHelper.world2canvas(to)
@@ -77,6 +75,7 @@ export const getPrimitiveRenderer = (canvasHelper: CanvasHelper) => {
     }
   }
 
+  /* eslint-disable-next-line */
   const drawCompositeModel = (pos: vec2, items: Iterable<Model>) => {    
     for (const element of items) {
       drawModel(pos, element)

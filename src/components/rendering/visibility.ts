@@ -189,7 +189,7 @@ export const isSegmentOccluded = (thisSegment: Segment, otherSegment: Segment) =
 }
 
 const purgeOccludedSegments = (segments : ReadonlyArray<Segment>) => {
-  const occludedSegments = new Map<number, boolean>();
+  const occludedSegments = new Set<number>();
   for (var i = 0; i < segments.length; i++) {
     
     const candidateOccluder = segments[i]
@@ -199,9 +199,13 @@ const purgeOccludedSegments = (segments : ReadonlyArray<Segment>) => {
     for (var j = 0; j < segments.length; j++) {
       if (i !== j) {
         const candidateOccluded = segments[j]
+
+        if (occludedSegments.has(candidateOccluded.id)) {
+          continue;
+        }
         
         if (isSegmentOccluded(candidateOccluded, candidateOccluder)) {
-          occludedSegments.set(candidateOccluded.id, true);
+          occludedSegments.add(candidateOccluded.id);
         }
       }
     }
@@ -227,8 +231,8 @@ let cosBuffer: number[] = [];
 let cache: VisibilityCache = getVisibilityStripCache();
 
 export const findVisibilityStripNoCache = (pos: vec2, lightParams: LightParameters, items: ReadonlyArray<StaticObject>, resultBuffer: Float32Array) => {
-    
-  const elementSegments = items.map(element => findElementSegments(element.pos, element.model, pos));
+  const filtered = items.filter(el => distanceApproximation(el, pos) < 1000.0) // revisit this
+  const elementSegments = filtered.map(element => findElementSegments(element.pos, element.model, pos));
 
   const segmentsNonPurged = elementSegments.map((rayPair, i) => {
     const r0 = toPolar(rayPair[0])

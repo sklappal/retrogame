@@ -19,8 +19,10 @@ export const getRenderingHandler = (
 
   const drawOverlay = () => {
     overlayRenderer.clearCanvas("#00000000");
-    var text = "FPS: " + gamestate.fps.toFixed(1)   
+    let text = "FPS: " + gamestate.fps.toFixed(1)   
     overlayRenderer.drawTextCanvas([overlayRenderer.width()-120, overlayRenderer.height()-40], text)
+    text = "Debug (P): " + (gamestate.config.debug.debug_on ? "ON" : "OFF");
+    overlayRenderer.drawTextCanvas([overlayRenderer.width()-120, overlayRenderer.height()-20], text)
   }
     
 /* eslint-disable-next-line */
@@ -35,7 +37,6 @@ export const getRenderingHandler = (
       overlayRenderer.drawLine([offset * scale, (i/subdivisions + offset) * scale], [-offset*scale, (i/subdivisions + offset) * scale], "#222222")
       overlayRenderer.drawLine([(i/subdivisions + offset) * scale, offset * scale], [(i/subdivisions + offset) * scale, -offset*scale, ], "#222222")
     }
-
 
     for (let edge of gamestate.graph.edges) {
       const node1 = gamestate.graph.getNode(edge.from)

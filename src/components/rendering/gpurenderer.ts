@@ -285,6 +285,13 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
   }
   
   initGl();
+
+  function time(f : () => void, ctx: string) {
+    const start = performance.now();
+    f();
+    if (gamestate.config.debug.debug_on)
+      console.log(ctx, "took", (performance.now() - start));
+  }
   
 
 
@@ -293,9 +300,9 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
     width: canvasHelper.width,
     height: canvasHelper.height,
     draw: () => {
-      updateVisibilityTexture();
-      drawScene();
-
+      time(updateVisibilityTexture, "updateVisibilityTexture");
+      
+      time(drawScene, "drawScene");
     }
   }
 }

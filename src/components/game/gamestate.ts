@@ -90,7 +90,7 @@ const playerDefault = {
   pos: vec2.fromValues(0.0, 0.0),
   light: {
     color: randomColor(),
-    intensity: 0.1,
+    intensity: 0.9,
     angle: 0.0,
     angularWidth: 0.2*Math.PI
   },

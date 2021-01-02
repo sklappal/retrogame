@@ -32,7 +32,8 @@ export const vertexShaderSource = `#version 300 es
 
   in vec2 posWorld;
   in vec2 posVertex;
-  
+  uniform mat3 uModelMatrix;
+
   uniform vec2 uLightPositionsWorld[NUM_LIGHTS];
   uniform vec3 uLightColors[NUM_LIGHTS];
   uniform float uLightIntensities[NUM_LIGHTS];
@@ -109,7 +110,7 @@ export const vertexShaderSource = `#version 300 es
   vec3 toneMap(vec3 hdrColor) {
     const float gamma = 2.2;
   
-    const float exposure = 1.0;
+    const float exposure = 5.0;
     
     // Exposure tone mapping
     vec3 mapped = vec3(1.0) - exp(-hdrColor * exposure);
@@ -161,13 +162,26 @@ export const vertexShaderSource = `#version 300 es
     }
 
     float dist = distance(posWorld, uLightPositionsWorld[0]);
-    vec3 ambientLight = vec3(0.01, 0.01, 0.01) * 2.0/(dist*dist);
+    vec3 ambientLight = vec3(0.01, 0.01, 0.01) * 2.0/(dist*dist) * playerLightMultiplier;
     
-    vec3 col = toneMap(light  + ambientLight);
-    //col = col + pow(gradientNoise(posWorld*20.0),4.0)*0.1;
-    col = col + gradientNoise(posWorld*5.0)*0.05;
+    vec3 lightColor = light + ambientLight;
+    vec3 material = uColor.rgb;
 
-    fragmentColor = uColor * vec4(col, 1.0);
+    if (uColor != vec4(0.0, 0.0, 0.0, 1.0)) {
+      material = 0.5 + 0.5*vec3(pow(gradientNoise(0.1*posWorld), 5.0));
+    }
+    else {
+      if (abs(posVertex.x) > 1.0 - 0.1/uModelMatrix[0][0]  || abs(posVertex.y) > 1.0 - 0.1/uModelMatrix[1][1]) {
+        material = vec3(10.0, 10.0, 10.0);
+      }
+    }
+
+    vec3 col = toneMap(material * lightColor);
+    
+    
+    
+
+    fragmentColor = vec4(col, 1.0);
   }
 
   /////////////////////`;

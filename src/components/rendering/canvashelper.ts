@@ -47,11 +47,17 @@ export const getCanvasHelper = (canvas: HTMLCanvasElement, camera: Camera) => {
 
   const world2viewMatrix = () => mat3.fromTranslation(mat3.create(), vec2.negate(vec2.create(), camera.pos));
 
-  const view2canvasMatrix = () => mat3.fromValues(pixelSize(), 0, 0, 0, pixelSize(), 0, width() * 0.5, height() * 0.5, 1);
+  const view2canvasMatrix = () => mat3.fromValues(
+      pixelSize(),              0, 0,
+                0,    pixelSize(), 0, 
+    width() * 0.5, height() * 0.5, 1);
 
   const world2canvasMatrix = () => mat3.multiply(mat3.create(), view2canvasMatrix(), world2viewMatrix());
 
-  const canvas2ndcMatrix = () => mat3.fromValues(2 / width(), 0, 0, 0, -2 / height(), 0, -1, +1, 1);
+  const canvas2ndcMatrix = () => mat3.fromValues(
+    2 / width(),             0, 0,
+              0, -2 / height(), 0,
+             -1,            +1, 1);
 
   const view2ndcMatrix = () =>  mat3.multiply(mat3.create(), canvas2ndcMatrix(),  view2canvasMatrix());
 

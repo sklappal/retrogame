@@ -55,7 +55,7 @@ export const vertexShaderSource = `#version 300 es
 
   uniform vec4 uColor;
   
-  uniform sampler2D uSampler;
+  uniform sampler2D uVisibilitySampler;
 
   out vec4 fragmentColor;
 
@@ -162,17 +162,17 @@ export const vertexShaderSource = `#version 300 es
 
   vec3 getLighting(int index, vec2 currentPos, sampler2D sampler) {
     vec3 light = getLightContribution(index, posWorld);
-    float shadow = getShadowMultiplier(index, index+1, posWorld, uSampler);
+    float shadow = getShadowMultiplier(index, index+1, posWorld, sampler);
     return light*shadow;
   }
 
   void main(void) {
     
-    float playerLightMultiplier = getShadowMultiplier(0, 0, posWorld, uSampler);
+    float playerLightMultiplier = getShadowMultiplier(0, 0, posWorld, uVisibilitySampler);
         
     vec3 light = vec3(0.0);
     for (int i = 0; i < uActualNumberOfLights; i++) {
-      light += getLighting(i, posWorld, uSampler) * playerLightMultiplier;
+      light += getLighting(i, posWorld, uVisibilitySampler) * playerLightMultiplier;
     }
 
     float dist = distance(posWorld, uLightPositionsWorld[0]);
@@ -183,7 +183,7 @@ export const vertexShaderSource = `#version 300 es
 
     if (uColor != vec4(0.0, 0.0, 0.0, 1.0)) {
       float noiseFactor = 0.1;
-      material = noiseFactor + (1.0-noiseFactor)*vec3(pow(gradientNoise(posWorld*10.0), 2.0));
+      material = 10.0*(noiseFactor + (1.0-noiseFactor)*vec3(pow(gradientNoise(posWorld*0.1), 2.0)));
     }
     else {
       if (abs(posVertex.x) > 1.0 - 0.1/uModelMatrix[0][0]  || abs(posVertex.y) > 1.0 - 0.1/uModelMatrix[1][1]) {
@@ -193,9 +193,6 @@ export const vertexShaderSource = `#version 300 es
 
     vec3 col = toneMap(material * lightColor);
     
-    
-    
-
     fragmentColor = vec4(col, 1.0);
   }
 

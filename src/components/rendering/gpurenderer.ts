@@ -46,9 +46,7 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState,
 
     time(() => gpuHelper.updateVisibilityTexture(gamestate), "updateVisibilityTexture");
 
-    gpuHelper.startRender();
-
-    gpuHelper.copyGameStateToGPU(gamestate);
+    gpuHelper.startMainRender(gamestate);
 
     gpuHelper.drawBackground();
 

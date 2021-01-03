@@ -33,6 +33,10 @@ export const getCanvasHelper = (canvas: HTMLCanvasElement, camera: Camera) => {
     if (!gl) {
       throw Error("Failed to get gl context.")
     }
+    const ext = gl.getExtension("EXT_color_buffer_float");
+    if (!ext) {
+      throw Error("Can't render to floating point textures.");
+    }
     return gl;
   }
 

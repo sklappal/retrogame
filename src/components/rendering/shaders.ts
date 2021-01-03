@@ -21,7 +21,21 @@ export const vertexShaderSource = `#version 300 es
 
   ///////////////////`;
 
-  export const fragmentShaderSource = `#version 300 es
+  export const firstPassFragmentShaderSource  = `#version 300 es
+  /////////////////////
+  // Fragment Shader //
+  /////////////////////
+  precision highp float;
+
+  out vec4 fragmentColor;
+
+  void main(void) {
+    fragmentColor = vec4(0.0, 0.0, 0.0, 1.0);
+  }
+
+  /////////////////////`;
+
+  export const mainFragmentShaderSource = `#version 300 es
   /////////////////////
   // Fragment Shader //
   /////////////////////
@@ -168,7 +182,8 @@ export const vertexShaderSource = `#version 300 es
     vec3 material = uColor.rgb;
 
     if (uColor != vec4(0.0, 0.0, 0.0, 1.0)) {
-      material = 0.5 + 0.5*vec3(pow(gradientNoise(0.1*posWorld), 5.0));
+      float noiseFactor = 0.1;
+      material = noiseFactor + (1.0-noiseFactor)*vec3(pow(gradientNoise(posWorld*10.0), 2.0));
     }
     else {
       if (abs(posVertex.x) > 1.0 - 0.1/uModelMatrix[0][0]  || abs(posVertex.y) > 1.0 - 0.1/uModelMatrix[1][1]) {

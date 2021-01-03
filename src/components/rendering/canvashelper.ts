@@ -23,13 +23,18 @@ export const getCanvasHelper = (canvas: HTMLCanvasElement, camera: Camera) => {
 
   // field of view tells how many world units are shown with the default resolution
   // defaultPixelCount tells how many canvas pixels this is
-
   
   const defaultPixelCount = 800.0;
 
   const getContext: () => CanvasRenderingContext2D = () => getCanvas().getContext("2d")!;
 
-  const getWebGLContext: () => WebGL2RenderingContext = () => getCanvas().getContext("webgl2")!;
+  const getWebGLContext: () => WebGL2RenderingContext = () => {
+    const gl = getCanvas().getContext("webgl2")!;
+    if (!gl) {
+      throw Error("Failed to get gl context.")
+    }
+    return gl;
+  }
 
   const getCanvas = () => canvas;
   

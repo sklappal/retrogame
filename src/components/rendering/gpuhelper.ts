@@ -37,6 +37,7 @@ const createCircleBuffer = (gl: WebGL2RenderingContext) => {
   const arrays = {
     position: arr,
   };
+
   return twgl.createBufferInfoFromArrays(gl, arrays);
 }
 
@@ -48,30 +49,106 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
   const firstPassGlProgramInfo = twgl.createProgramInfo(gl, [vertexShaderSource, firstPassFragmentShaderSource]);
   const mainGlProgramInfo = twgl.createProgramInfo(gl, [vertexShaderSource, mainFragmentShaderSource]);
 
+  let currentProgram = firstPassGlProgramInfo;
+
   const buffers = {
     "rect": createRectBuffer(gl),
     "circle": createCircleBuffer(gl)
   };
-  
+
   const modelMatrix = mat3.create();
 
 
-  // RENDERING
+  let firstPassTextureWidth = -1;
+  let firstPassTextureHeight = -1;
+  const firstPassTexture = gl.createTexture();
+  const firstPassFrameBuffer = gl.createFramebuffer();
+
+
+  const visibilityTextureWidth = 1024;
+  const visibilityTextureHeight = 50; // player visibility 1 player light 1 other lights n
+  const visibilityPixels = new Float32Array(visibilityTextureWidth * visibilityTextureHeight);
+  const visibilityTexture = initVisibilityTexture();
+
+
+  // FIRST PASS RENDERING
+
+  const startFirstPassRender = () => {
+    currentProgram = firstPassGlProgramInfo;
+    gl.useProgram(firstPassGlProgramInfo.program);
+
+    gl.viewport(0, 0, canvasHelper.width(), canvasHelper.height());
+
+    updateFirstPassTexture();
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, firstPassFrameBuffer);
+
+    // attach the texture as the first color attachment
+    const attachmentPoint = gl.COLOR_ATTACHMENT0;
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER, attachmentPoint, gl.TEXTURE_2D, firstPassTexture, /*level*/ 0);
+
+    gl.clearColor(1.0, 1.0, 1.0, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    setFirstPassUniforms();
+  }
+
+  const updateFirstPassTexture = () => {
+    if (firstPassTextureWidth !== canvasHelper.width() || firstPassTextureHeight !== canvasHelper.height()) {
+      gl.bindTexture(gl.TEXTURE_2D, firstPassTexture);
+
+      const level = 0;
+      const internalFormat = gl.RGBA;
+      const border = 0;
+      const srcFormat = gl.RGBA;
+      const srcType = gl.UNSIGNED_BYTE;
+
+      gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
+        canvasHelper.width(), canvasHelper.height(), border, srcFormat, srcType, null);
+
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+    }
+
+  }
+
+
+
+  // MAIN RENDER
 
   const startMainRender = (gamestate: GameState) => {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+    currentProgram = mainGlProgramInfo;
     gl.useProgram(mainGlProgramInfo.program);
+
     gl.viewport(0, 0, canvasHelper.width(), canvasHelper.height());
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
     setUniforms(gamestate);
   }
- 
+
+  const setFirstPassUniforms = () => {
+    const uniforms = {
+      uViewMatrix: canvasHelper.world2viewMatrix(),
+      uProjectionMatrix: canvasHelper.view2ndcMatrix(),
+    }
+
+    twgl.setUniforms(firstPassGlProgramInfo, uniforms);
+
+  }
+
   const setUniforms = (gamestate: GameState) => {
     const uniforms = {
       uPlayerPositionWorld: gamestate.player.pos,
       uViewMatrix: canvasHelper.world2viewMatrix(),
       uProjectionMatrix: canvasHelper.view2ndcMatrix(),
       uActualNumberOfLights: gamestate.scene.lights.length + 1, // player light
-      uVisibilitySampler: visibilityTexture
+      uVisibilitySampler: visibilityTexture,
+      uBackgroundSampler: firstPassTexture
     }
 
     twgl.setUniforms(mainGlProgramInfo, uniforms);
@@ -84,7 +161,7 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
 
 
   const drawBuffer = (bufferInfo: BufferInfo, color: vec4) => {
-    twgl.setUniforms(mainGlProgramInfo, {
+    twgl.setUniforms(currentProgram, {
       uModelMatrix: modelMatrix,
       uColor: color
     });
@@ -147,7 +224,10 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
   }
 
 
-  const initTexture = (width: number, height: number) => {
+  // VISIBILITY TEXTURE STUFF
+
+
+  function initVisibilityTexture() {
     const texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
 
@@ -158,7 +238,7 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
     const srcType = gl.FLOAT;
 
     gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
-      width, height, border, srcFormat, srcType, null);
+      visibilityTextureWidth, visibilityTextureHeight, border, srcFormat, srcType, null);
 
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
@@ -167,14 +247,6 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
     return texture;
   };
 
-  
-  
-  // VISIBILITY TEXTURE STUFF
-
-  const visibilityTextureWidth = 1024;
-  const visibilityTextureHeight = 50; // player visibility 1 player light 1 other lights n
-  const visibilityPixels = new Float32Array(visibilityTextureWidth * visibilityTextureHeight);
-  const visibilityTexture = initTexture(visibilityTextureWidth, visibilityTextureHeight);
 
   const getSubArray = (index: number) => visibilityPixels.subarray(index * visibilityTextureWidth, (index + 1) * visibilityTextureWidth)
 
@@ -215,6 +287,7 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
     drawRect: drawRect,
     drawBackground: drawBackground,
     startMainRender: startMainRender,
+    startFirstPassRender: startFirstPassRender,
     updateVisibilityTexture: updateVisibilityTexture,
   }
 } 

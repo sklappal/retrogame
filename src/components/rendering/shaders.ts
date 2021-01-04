@@ -56,6 +56,7 @@ export const vertexShaderSource = `#version 300 es
   uniform vec4 uColor;
   
   uniform sampler2D uVisibilitySampler;
+  uniform sampler2D uBackgroundSampler;
 
   out vec4 fragmentColor;
 
@@ -140,10 +141,11 @@ export const vertexShaderSource = `#version 300 es
   }
 
   float sampleTextureAtAngle(float angle, sampler2D sampler, int textureIndex) {
-    float samplingLocation = float(round(  ((angle + M_PI) / (2.0 * M_PI)) * 1024.0) / 1024.0);
+    float sampling_angle = (angle + M_PI) / (2.0 * M_PI);
+
     float floatIndex = (float(textureIndex) + 0.5) * (1.0 / float(NUM_LIGHTS));
 
-    return texture(sampler, vec2(samplingLocation, floatIndex)).r;
+    return texture(sampler, vec2(sampling_angle, floatIndex)).r;
   }
 
   float getShadowMultiplier(int lightIndex, int textureIndex, vec2 currentPos, sampler2D sampler) {
@@ -167,7 +169,7 @@ export const vertexShaderSource = `#version 300 es
   }
 
   void main(void) {
-    
+    vec3 backgroundColor = texture(uBackgroundSampler, posVertex * 0.5 + 0.5).rgb;
     float playerLightMultiplier = getShadowMultiplier(0, 0, posWorld, uVisibilitySampler);
         
     vec3 light = vec3(0.0);
@@ -181,18 +183,16 @@ export const vertexShaderSource = `#version 300 es
     vec3 lightColor = light + ambientLight;
     vec3 material = uColor.rgb;
 
-    if (uColor != vec4(0.0, 0.0, 0.0, 1.0)) {
+    if (backgroundColor != vec3(0.0, 0.0, 0.0)) {
       float noiseFactor = 0.1;
       material = 10.0*(noiseFactor + (1.0-noiseFactor)*vec3(pow(gradientNoise(posWorld*0.1), 2.0)));
     }
     else {
-      if (abs(posVertex.x) > 1.0 - 0.1/uModelMatrix[0][0]  || abs(posVertex.y) > 1.0 - 0.1/uModelMatrix[1][1]) {
-        material = vec3(10.0, 10.0, 10.0);
-      }
+      material = backgroundColor;
     }
 
     vec3 col = toneMap(material * lightColor);
-    
+
     fragmentColor = vec4(col, 1.0);
   }
 

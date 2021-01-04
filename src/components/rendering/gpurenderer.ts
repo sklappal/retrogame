@@ -46,11 +46,19 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState,
 
     time(() => gpuHelper.updateVisibilityTexture(gamestate), "updateVisibilityTexture");
 
-    gpuHelper.startMainRender(gamestate);
+    time(() => {
+      gpuHelper.startFirstPassRender();
 
-    gpuHelper.drawBackground();
+      drawStaticObjects();
+    }, "first pass");
 
-    drawStaticObjects();
+    time(() => {
+      gpuHelper.startMainRender(gamestate);
+
+      gpuHelper.drawBackground();
+    }, "main render");
+
+    // drawStaticObjects();
 
     // drawDynamicObjects();
 
@@ -61,37 +69,6 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState,
 
 
 
-
-
-
-
-  // const fb = gl.createFramebuffer();
-
-  // const setRenderToTexture = () => {
-
-  //   const renderTexture = initTexture(512, 512);
-  //   gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-
-  //   // attach the texture as the first color attachment
-  //   const attachmentPoint = gl.COLOR_ATTACHMENT0;
-  //   gl.framebufferTexture2D(
-  //     gl.FRAMEBUFFER, attachmentPoint, gl.TEXTURE_2D, renderTexture, /*level*/ 0);
-
-
-  //   gl.bindTexture(gl.TEXTURE_2D, renderTexture);
-
-  //   // Tell WebGL how to convert from clip space to pixels
-  //   gl.viewport(0, 0, 512, 512);
-
-  //   // Clear the attachment(s).
-  //   gl.clearColor(0, 0, 1, 1);   // clear to blue
-  //   gl.clear(gl.COLOR_BUFFER_BIT| gl.DEPTH_BUFFER_BIT);
-
-  // }
-
-
-  //setRenderToTexture();
-
   function time(f: () => void, ctx: string) {
     const start = performance.now();
     f();
@@ -99,49 +76,12 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState,
       console.log(ctx, "took", (performance.now() - start));
   }
 
-  // let logged = true;
-
-
   return {
     getContext: canvasHelper.getWebGLContext,
     width: canvasHelper.width,
     height: canvasHelper.height,
     draw: () => {
-      
       time(drawScene, "drawScene");
-      // if(!logged) {
-      //   gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-      //   const srcFormat = gl.RED;
-      //   const srcType = gl.FLOAT;
-      //   // read the pixels
-      //   const buffer = new Float32Array(512*512);
-      //   gl.readPixels(0, 0, 512, 512, srcFormat, srcType, buffer);
-
-      //   const ctx = overlayRenderer.getContext();
-
-      //   const imd = ctx.getImageData(0, 0, 512, 512);
-
-      //   let max = 0.0;
-      //   for (let i = 0; i < buffer.length; i++) {
-      //     if (buffer[i] > max) {
-      //       max = buffer[i];
-      //     }
-      //   }
-
-      //   for (let i = 0; i < buffer.length; i++) {
-      //     imd.data[4*i] = (buffer[i]/max) * 255;
-      //     imd.data[4*i + 1] = (buffer[i]/max) * 255;
-      //     imd.data[4*i + 2] = (buffer[i]/max) * 255;
-      //     imd.data[4*i + 3] = 255;
-      //   }
-      //   console.log("PUTTING IMD, MAX", max);
-      //   ctx.putImageData(imd, 0, 0, 0, 0, 512, 512);
-
-
-      //console.log(buffer);
-      // Unbind the framebuffer
-      //gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     }
-    //logged = true;
   }
 }

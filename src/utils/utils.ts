@@ -98,8 +98,7 @@ const sfc32 = (a:number, b:number, c:number, d:number) => {
 
 export const getRandomGenerator = (seed: string = "") => {
   const seeder = xmur3(seed);
-  console.log(seed)
-  console.log(seeder())
+
   let ret = sfc32(seeder(), seeder(), seeder(), seeder());
   
   for (var i = 0; i < 15; i++) 

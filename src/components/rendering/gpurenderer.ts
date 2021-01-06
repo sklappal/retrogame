@@ -52,6 +52,8 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState,
       drawStaticObjects();
     }, "first pass");
 
+    time ( () => gpuHelper.calculateVisibilityOnGPU(gamestate), "calculateVisibilityOnGPU");
+
     time(() => {
       gpuHelper.startMainRender(gamestate);
 

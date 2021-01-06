@@ -1,3 +1,7 @@
+export const VISIBILITY_TEXTURE_WIDTH = 1024.0
+export const MAX_NUM_LIGHTS = 50
+
+
 export const vertexShaderSource = `#version 300 es
   ///////////////////
   // Vertex Shader //
@@ -35,6 +39,20 @@ export const vertexShaderSource = `#version 300 es
 
   /////////////////////`;
 
+  export const visibilityVertexShaderSource = `#version 300 es
+  ///////////////////
+  // Vertex Shader //
+  ///////////////////
+  
+  in vec3 in_position;
+  out vec3 position;
+  
+  void main(void) {
+    gl_Position = vec4(in_position, 1.0);
+  }
+
+  ///////////////////`;
+
   export const visibilityFragmentShaderSource = `#version 300 es
   /////////////////////
   // Fragment Shader //
@@ -42,27 +60,39 @@ export const vertexShaderSource = `#version 300 es
   precision highp float;
 
   #define M_PI 3.1415926535897932384626433832795
-
-  in vec2 posWorld;
-  in vec2 posVertex;
-  
-  unfirom vec2 uBackgroundResolution;
-  uniform vec2 uVisibilityActorPosWorld; // player or light
-  uniform mat3 uModelMatrix;
+  #define MAX_SAMPLING_DISTANCE 1000.0;
+  #define SAMPLING_STEP 0.1;
+  #define VISIBILITY_TEXTURE_WIDTH ${VISIBILITY_TEXTURE_WIDTH}
 
   uniform sampler2D uBackgroundSampler;
+  uniform mat3 uViewMatrix; // world coordinates to view
+  uniform mat3 uProjectionMatrix; // view coordinates to NDC
+  uniform vec2 uActorPosWorld;
 
   out float fragmentDepth;
 
-  void main(void) {
-    vec3 backgroundColor = texture(uBackgroundSampler, posVertex * 0.5 + 0.5).rgb;
-    float angle = atan()
+  void main(void) {    
+    float angle = (gl_FragCoord.x / float(VISIBILITY_TEXTURE_WIDTH)) * 2.0 * M_PI - M_PI;
+
+    
+    vec2 dir = vec2(cos(angle), sin(angle));
+    float r_out = 1000.0;
+    for (float r = 0.0; r < 1000.0; r += 0.1) {
+      vec2 pos = uActorPosWorld + r * dir;
+      vec3 ndcPos = (uProjectionMatrix * uViewMatrix) * vec3(pos, 1.0);
+      vec2 sampling = (ndcPos.xy + vec2(1.0)) * 0.5;      
+      vec3 backgroundColor = texture(uBackgroundSampler, sampling).rgb;
+      if (backgroundColor != vec3(1.0, 1.0, 1.0))
+      {
+        r_out = r;
+        break;
+      }
+    }
+
+    fragmentDepth = r_out;
   }
 
   /////////////////////`;
-
-  export const VISIBILITY_TEXTURE_WIDTH = 1024.0
-  export const MAX_NUM_LIGHTS = 50
 
   export const mainFragmentShaderSource = `#version 300 es
   /////////////////////

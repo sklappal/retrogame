@@ -1,4 +1,4 @@
-import { vertexShaderSource, mainFragmentShaderSource, firstPassFragmentShaderSource, VISIBILITY_TEXTURE_WIDTH, MAX_NUM_LIGHTS } from './shaders';
+import { vertexShaderSource, mainFragmentShaderSource, firstPassFragmentShaderSource, VISIBILITY_TEXTURE_WIDTH, MAX_NUM_LIGHTS, visibilityFragmentShaderSource, visibilityVertexShaderSource } from './shaders';
 import * as twgl from 'twgl.js'
 import { BufferInfo } from 'twgl.js'
 import { vec2, mat3, vec4, vec3 } from 'gl-matrix';
@@ -47,9 +47,14 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
   const gl = canvasHelper.getWebGLContext();
 
   const firstPassGlProgramInfo = twgl.createProgramInfo(gl, [vertexShaderSource, firstPassFragmentShaderSource]);
+  const visibilityGlProgramInfo = twgl.createProgramInfo(gl, [visibilityVertexShaderSource, visibilityFragmentShaderSource]);
   const mainGlProgramInfo = twgl.createProgramInfo(gl, [vertexShaderSource, mainFragmentShaderSource]);
 
   let currentProgram = firstPassGlProgramInfo;
+  const setCurrentProgram = (p:twgl.ProgramInfo) => {
+    currentProgram = p;
+    gl.useProgram(p.program);
+  }
 
   const buffers = {
     "rect": createRectBuffer(gl),
@@ -62,7 +67,8 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
   let firstPassTextureWidth = -1;
   let firstPassTextureHeight = -1;
   const firstPassTexture = gl.createTexture();
-  const firstPassFrameBuffer = gl.createFramebuffer();
+  const frameBuffer = gl.createFramebuffer();
+  const visibilityCalculationTexture = initVisibilityCalculationTexture();
 
   const visibilityTextureHeight = MAX_NUM_LIGHTS; // player visibility 1 player light 1 other lights n
   const visibilityPixels = new Float32Array(VISIBILITY_TEXTURE_WIDTH * visibilityTextureHeight);
@@ -72,14 +78,13 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
   // FIRST PASS RENDERING
 
   const startFirstPassRender = () => {
-    currentProgram = firstPassGlProgramInfo;
-    gl.useProgram(firstPassGlProgramInfo.program);
+    setCurrentProgram(firstPassGlProgramInfo);
 
     gl.viewport(0, 0, canvasHelper.width(), canvasHelper.height());
 
     updateFirstPassTexture();
 
-    gl.bindFramebuffer(gl.FRAMEBUFFER, firstPassFrameBuffer);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
 
     // attach the texture as the first color attachment
     const attachmentPoint = gl.COLOR_ATTACHMENT0;
@@ -89,6 +94,16 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
     gl.clearColor(1.0, 1.0, 1.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     setFirstPassUniforms();
+  }
+  
+
+  const setFirstPassUniforms = () => {
+    const uniforms = {
+      uViewMatrix: canvasHelper.world2viewMatrix(),
+      uProjectionMatrix: canvasHelper.view2ndcMatrix(),
+    }
+
+    twgl.setUniforms(firstPassGlProgramInfo, uniforms);
   }
 
   const updateFirstPassTexture = () => {
@@ -112,34 +127,63 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
 
   }
 
+  // VISIBILITY CALCULATION ON GPU
 
+  const calculateVisibilityOnGPU = (gamestate: GameState) => {
+    setCurrentProgram(visibilityGlProgramInfo);
+    
+    gl.viewport(0, 0, VISIBILITY_TEXTURE_WIDTH, 1);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+
+    // attach the texture as the first color attachment
+    const attachmentPoint = gl.COLOR_ATTACHMENT0;
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER, attachmentPoint, gl.TEXTURE_2D, visibilityCalculationTexture, /*level*/ 0);
+
+    gl.clearColor(0.0, 0.0, 0.0, 0.0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    setVisibilityCalculationUniforms(gamestate);
+
+    const bufferInfo = buffers["rect"];
+    twgl.setBuffersAndAttributes(gl, currentProgram, bufferInfo);
+    twgl.drawBufferInfo(gl, bufferInfo);
+
+    gl.bindTexture(gl.TEXTURE_2D, visibilityTexture);
+
+    const xOffset = 0;
+    const yOffset = 0;
+    const height = 1;
+    
+    gl.copyTexSubImage2D(gl.TEXTURE_2D, 0, xOffset, yOffset, 0, 0, VISIBILITY_TEXTURE_WIDTH, height);
+  }
+ 
+
+  const setVisibilityCalculationUniforms = (gamestate: GameState) => {
+    const uniforms = {
+      uViewMatrix: canvasHelper.world2viewMatrix(),
+      uProjectionMatrix: canvasHelper.view2ndcMatrix(),
+      uBackgroundSampler: firstPassTexture,
+      uActorPosWorld: gamestate.player.pos
+    }
+
+    twgl.setUniforms(visibilityGlProgramInfo, uniforms);
+  }
 
   // MAIN RENDER
 
   const startMainRender = (gamestate: GameState) => {
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-    currentProgram = mainGlProgramInfo;
-    gl.useProgram(mainGlProgramInfo.program);
+    setCurrentProgram(mainGlProgramInfo);
 
     gl.viewport(0, 0, canvasHelper.width(), canvasHelper.height());
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    setUniforms(gamestate);
+    setMainRenderUniforms(gamestate);
   }
 
-  const setFirstPassUniforms = () => {
-    const uniforms = {
-      uViewMatrix: canvasHelper.world2viewMatrix(),
-      uProjectionMatrix: canvasHelper.view2ndcMatrix(),
-    }
-
-    twgl.setUniforms(firstPassGlProgramInfo, uniforms);
-
-  }
-
-  const setUniforms = (gamestate: GameState) => {
+  const setMainRenderUniforms = (gamestate: GameState) => {
     const uniforms = {
       uPlayerPositionWorld: gamestate.player.pos,
       uViewMatrix: canvasHelper.world2viewMatrix(),
@@ -164,7 +208,7 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
       uColor: color
     });
 
-    twgl.setBuffersAndAttributes(gl, mainGlProgramInfo, bufferInfo);
+    twgl.setBuffersAndAttributes(gl, currentProgram, bufferInfo);
     twgl.drawBufferInfo(gl, bufferInfo);
 
     mat3.identity(modelMatrix);
@@ -224,6 +268,25 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
 
   // VISIBILITY TEXTURE STUFF
 
+  function initVisibilityCalculationTexture() {
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+
+    const level = 0;
+    const internalFormat = gl.R32F;
+    const border = 0;
+    const srcFormat = gl.RED;
+    const srcType = gl.FLOAT;
+
+    gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
+      VISIBILITY_TEXTURE_WIDTH, 1, border, srcFormat, srcType, null);
+
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+    return texture;
+  };
 
   function initVisibilityTexture() {
     const texture = gl.createTexture();
@@ -251,11 +314,14 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
   const updateVisibilityTexture = (gamestate: GameState) => {
     // this one is used for visibility
     // here we fake the intensity to a canvas size dependent intensity so that the visibility calculation works correctly
-    const intensity = Math.max(canvasHelper.widthWorld(), canvasHelper.heightWorld());
+    // const intensity = Math.max(canvasHelper.widthWorld(), canvasHelper.heightWorld());
 
-    if (findVisibilityStrip(-1, gamestate.player.pos, { ...gamestate.player.light, intensity: intensity * intensity / 1000.0, angle: undefined, angularWidth: undefined }, gamestate.scene.staticObjects, getSubArray(0))) {
-      updateVisibilityTextureOnGpu(0);
-    }
+      // TODO: Move all of this to happen on GPU
+
+
+    // if (findVisibilityStrip(-1, gamestate.player.pos, { ...gamestate.player.light, intensity: intensity * intensity / 1000.0, angle: undefined, angularWidth: undefined }, gamestate.scene.staticObjects, getSubArray(0))) {
+    //   updateVisibilityTextureOnGpu(0);
+    // }
 
     // this one is used for player light
     if (findVisibilityStrip(gamestate.player.id, gamestate.player.pos, gamestate.player.light, gamestate.scene.staticObjects, getSubArray(1))) {
@@ -287,5 +353,6 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
     startMainRender: startMainRender,
     startFirstPassRender: startFirstPassRender,
     updateVisibilityTexture: updateVisibilityTexture,
+    calculateVisibilityOnGPU: calculateVisibilityOnGPU
   }
 } 

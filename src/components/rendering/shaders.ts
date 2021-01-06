@@ -35,6 +35,35 @@ export const vertexShaderSource = `#version 300 es
 
   /////////////////////`;
 
+  export const visibilityFragmentShaderSource = `#version 300 es
+  /////////////////////
+  // Fragment Shader //
+  /////////////////////
+  precision highp float;
+
+  #define M_PI 3.1415926535897932384626433832795
+
+  in vec2 posWorld;
+  in vec2 posVertex;
+  
+  unfirom vec2 uBackgroundResolution;
+  uniform vec2 uVisibilityActorPosWorld; // player or light
+  uniform mat3 uModelMatrix;
+
+  uniform sampler2D uBackgroundSampler;
+
+  out float fragmentDepth;
+
+  void main(void) {
+    vec3 backgroundColor = texture(uBackgroundSampler, posVertex * 0.5 + 0.5).rgb;
+    float angle = atan()
+  }
+
+  /////////////////////`;
+
+  export const VISIBILITY_TEXTURE_WIDTH = 1024.0
+  export const MAX_NUM_LIGHTS = 50
+
   export const mainFragmentShaderSource = `#version 300 es
   /////////////////////
   // Fragment Shader //
@@ -42,15 +71,16 @@ export const vertexShaderSource = `#version 300 es
   precision highp float;
 
   #define M_PI 3.1415926535897932384626433832795
-  #define NUM_LIGHTS 50
+  #define MAX_NUM_LIGHTS ${MAX_NUM_LIGHTS}
+  #define VISIBILITY_TEXTURE_WIDTH ${VISIBILITY_TEXTURE_WIDTH}
 
   in vec2 posWorld;
   in vec2 posVertex;
   uniform mat3 uModelMatrix;
 
-  uniform vec2 uLightPositionsWorld[NUM_LIGHTS];
-  uniform vec3 uLightColors[NUM_LIGHTS];
-  uniform float uLightIntensities[NUM_LIGHTS];
+  uniform vec2 uLightPositionsWorld[MAX_NUM_LIGHTS];
+  uniform vec3 uLightColors[MAX_NUM_LIGHTS];
+  uniform float uLightIntensities[MAX_NUM_LIGHTS];
   uniform int uActualNumberOfLights;
 
   uniform vec4 uColor;
@@ -143,7 +173,7 @@ export const vertexShaderSource = `#version 300 es
   float sampleTextureAtAngle(float angle, sampler2D sampler, int textureIndex) {
     float sampling_angle = (angle + M_PI) / (2.0 * M_PI);
 
-    float floatIndex = (float(textureIndex) + 0.5) * (1.0 / float(NUM_LIGHTS));
+    float floatIndex = (float(textureIndex) + 0.5) * (1.0 / float(MAX_NUM_LIGHTS));
 
     return texture(sampler, vec2(sampling_angle, floatIndex)).r;
   }
@@ -152,7 +182,7 @@ export const vertexShaderSource = `#version 300 es
     vec2 lightRay = currentPos - uLightPositionsWorld[lightIndex];
     float lightDistance = length(lightRay);
     float angle = atan(lightRay.y, lightRay.x);
-    float delta = (M_PI / 1024.0) * 0.5;
+    float delta = (M_PI / float(VISIBILITY_TEXTURE_WIDTH)) * 0.5;
 
     float sum = 0.0;
     for (int i = 0; i < 9; i++) {

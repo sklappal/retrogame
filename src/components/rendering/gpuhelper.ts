@@ -1,4 +1,4 @@
-import { vertexShaderSource, mainFragmentShaderSource, firstPassFragmentShaderSource } from './shaders';
+import { vertexShaderSource, mainFragmentShaderSource, firstPassFragmentShaderSource, VISIBILITY_TEXTURE_WIDTH, MAX_NUM_LIGHTS } from './shaders';
 import * as twgl from 'twgl.js'
 import { BufferInfo } from 'twgl.js'
 import { vec2, mat3, vec4, vec3 } from 'gl-matrix';
@@ -64,10 +64,8 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
   const firstPassTexture = gl.createTexture();
   const firstPassFrameBuffer = gl.createFramebuffer();
 
-
-  const visibilityTextureWidth = 1024;
-  const visibilityTextureHeight = 50; // player visibility 1 player light 1 other lights n
-  const visibilityPixels = new Float32Array(visibilityTextureWidth * visibilityTextureHeight);
+  const visibilityTextureHeight = MAX_NUM_LIGHTS; // player visibility 1 player light 1 other lights n
+  const visibilityPixels = new Float32Array(VISIBILITY_TEXTURE_WIDTH * visibilityTextureHeight);
   const visibilityTexture = initVisibilityTexture();
 
 
@@ -238,7 +236,7 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
     const srcType = gl.FLOAT;
 
     gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
-      visibilityTextureWidth, visibilityTextureHeight, border, srcFormat, srcType, null);
+      VISIBILITY_TEXTURE_WIDTH, visibilityTextureHeight, border, srcFormat, srcType, null);
 
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
@@ -248,7 +246,7 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
   };
 
 
-  const getSubArray = (index: number) => visibilityPixels.subarray(index * visibilityTextureWidth, (index + 1) * visibilityTextureWidth)
+  const getSubArray = (index: number) => visibilityPixels.subarray(index * VISIBILITY_TEXTURE_WIDTH, (index + 1) * VISIBILITY_TEXTURE_WIDTH)
 
   const updateVisibilityTexture = (gamestate: GameState) => {
     // this one is used for visibility
@@ -278,7 +276,7 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
     const xOffset = 0;
     const yOffset = index;
     const height = 1;
-    gl.texSubImage2D(gl.TEXTURE_2D, 0, xOffset, yOffset, visibilityTextureWidth, height, gl.RED, gl.FLOAT, getSubArray(index));
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, xOffset, yOffset, VISIBILITY_TEXTURE_WIDTH, height, gl.RED, gl.FLOAT, getSubArray(index));
   }
 
   return {

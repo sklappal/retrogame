@@ -51,7 +51,7 @@ export const generateScene = (seed: string) => {
     const r = rects[i];
     const pos = gridToWorld(r.i + r.side * 0.5, r.j + r.side*0.5)
     
-    scene.createStaticObject(pos, rect(scale * r.side, scale * r.side));
+    scene.createStaticObject(pos, rect(scale * r.side + randomGenerator()*2.0, scale * r.side + randomGenerator()*2.0));
     //scene.createStaticObject(pos, circle(scale * r.side*0.5)); for inspiration
   }
 

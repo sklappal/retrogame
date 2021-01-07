@@ -20,7 +20,6 @@ export const vertexShaderSource = `#version 300 es
     posWorld = positionWorld.xy;
     posVertex = position.xy;
     gl_Position = vec4((uProjectionMatrix * uViewMatrix) * positionWorld, 1.0);
-
   }
 
   ///////////////////`;
@@ -117,6 +116,8 @@ export const vertexShaderSource = `#version 300 es
   
   uniform sampler2D uVisibilitySampler;
   uniform sampler2D uBackgroundSampler;
+  uniform vec2 uResolution;
+  uniform float uPixelSize;
 
   out vec4 fragmentColor;
 
@@ -228,8 +229,22 @@ export const vertexShaderSource = `#version 300 es
     return light*shadow;
   }
 
+  float lightColorBorderMultiplier() {
+    float delta = uPixelSize/8.0;
+    vec3 bg = texture(uBackgroundSampler, gl_FragCoord.xy / uResolution).rgb;
+    for (float u = -1.; u < 2.; u+=1.) {
+      for (float v = -1.; v < 2.; v+=1.) {
+        vec3 col = texture(uBackgroundSampler, (gl_FragCoord.xy + vec2(u*delta, v*delta)) / uResolution).rgb;
+        if (col != bg) {
+          return 20.0;
+        }
+      }
+    }
+    return 1.0;
+
+  }
+
   void main(void) {
-    vec3 backgroundColor = texture(uBackgroundSampler, posVertex * 0.5 + 0.5).rgb;
     float playerLightMultiplier = getShadowMultiplier(0, 0, posWorld, uVisibilitySampler);
         
     vec3 light = vec3(0.0);
@@ -243,18 +258,21 @@ export const vertexShaderSource = `#version 300 es
     vec3 lightColor = light + ambientLight;
     vec3 material = uColor.rgb;
 
-    if (backgroundColor != vec3(0.0, 0.0, 0.0)) {
+    vec3 bg = texture(uBackgroundSampler, gl_FragCoord.xy / uResolution).rgb;
+    if (bg == vec3(1.0, 1.0, 1.0)) {
       float noiseFactor = 0.1;
       material = 10.0*(noiseFactor + (1.0-noiseFactor)*vec3(pow(gradientNoise(posWorld*0.1), 2.0)));
+      lightColor *= lightColorBorderMultiplier();
     }
     else {
-      material = backgroundColor;
+      material = bg;
     }
 
     vec3 col = toneMap(material * lightColor);
 
-    // col = backgroundColor;
+    // col = bg;
     fragmentColor = vec4(col, 1.0);
+    
   }
 
   /////////////////////`;

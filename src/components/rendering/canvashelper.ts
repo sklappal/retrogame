@@ -17,6 +17,7 @@ export interface CanvasHelper {
   world2viewMatrix(): mat3
   view2canvasMatrix(): mat3
   view2ndcMatrix(): mat3
+  pixelSize(): number
 }
 
 export const getCanvasHelper = (canvas: HTMLCanvasElement, camera: Camera) => {
@@ -102,6 +103,7 @@ export const getCanvasHelper = (canvas: HTMLCanvasElement, camera: Camera) => {
     world2view: world2view,
     world2viewMatrix: world2viewMatrix,
     view2canvasMatrix: view2canvasMatrix,
-    view2ndcMatrix: view2ndcMatrix
+    view2ndcMatrix: view2ndcMatrix,
+    pixelSize: pixelSize
   }
 }

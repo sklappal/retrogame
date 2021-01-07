@@ -190,9 +190,11 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
       uProjectionMatrix: canvasHelper.view2ndcMatrix(),
       uActualNumberOfLights: gamestate.scene.lights.length + 1, // player light
       uVisibilitySampler: visibilityTexture,
-      uBackgroundSampler: firstPassTexture
+      uBackgroundSampler: firstPassTexture,
+      uResolution: vec2.fromValues(canvasHelper.width(), canvasHelper.height()),
+      uPixelSize: canvasHelper.pixelSize()
     }
-
+    
     twgl.setUniforms(mainGlProgramInfo, uniforms);
 
     setLightUniforms(gamestate.player.pos, gamestate.player.light.color, gamestate.player.light.intensity, 0);

@@ -28,32 +28,20 @@ export const getRenderingHandler = (
 /* eslint-disable-next-line */
   const drawGraph = () => {
     const count = 30;
-    const scale = 2.0;
+    const scale = 1.0;
     const offset = -count*0.5;
-
-    const subdivisions = 5;
-    
-    for (let i = 0; i <= 30 * subdivisions; i++) {
-      overlayRenderer.drawLine([offset * scale, (i/subdivisions + offset) * scale], [-offset*scale, (i/subdivisions + offset) * scale], "#222222")
-      overlayRenderer.drawLine([(i/subdivisions + offset) * scale, offset * scale], [(i/subdivisions + offset) * scale, -offset*scale, ], "#222222")
-    }
 
     for (let edge of gamestate.graph.edges) {
       const node1 = gamestate.graph.getNode(edge.from)
       const node2 = gamestate.graph.getNode(edge.to)
-      overlayRenderer.drawLine([(node1.i + offset) * scale, (node1.j + offset) * scale], [(node2.i + offset)*scale, (node2.j + offset)*scale], "green")
+      overlayRenderer.drawLine([(node1.i + offset) * scale, (node1.j + offset) * scale], [(node2.i + offset)*scale, (node2.j + offset)*scale], "rgba(0, 0, 0, 0.2)")
     }
 
     for (let node of gamestate.graph.nodes) {
-      overlayRenderer.drawCircle([(node.i + offset)*scale, (node.j + offset)*scale], scale/10.0, "green")
+      overlayRenderer.drawCircle([(node.i + offset)*scale, (node.j + offset)*scale], scale/10.0, "rgba(0, 0, 0, 0.2)")
     }
   }
 
-  const drawDebug = () => {
-    if (gamestate.config.debug.debug_on) {
-      // overlayRenderer.drawTextCanvas()
-    }
-  }
 
   return {
     draw: () => {
@@ -61,12 +49,7 @@ export const getRenderingHandler = (
 
       drawOverlay();
 
-      drawDebug();
-     
-
-
-
-      // drawGraph();
+      drawGraph();
 
     }
   }

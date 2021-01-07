@@ -74,8 +74,8 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState,
   function time(f: () => void, ctx: string) {
     const start = performance.now();
     f();
-    if (gamestate.config.debug.debug_on)
-      console.log(ctx, "took", (performance.now() - start));
+    
+    gamestate.logDebug(ctx, "took", (performance.now() - start));
   }
 
   return {

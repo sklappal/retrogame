@@ -83,6 +83,8 @@ export interface GameState {
   createDynamicObject(thisPos: vec2, velocity: vec2, model: Model): void
 
   removeOlderDynamicObjects(delta: number): void
+
+  logDebug(...s: any[]): void
 }
 
 const playerDefault = {
@@ -128,6 +130,12 @@ export class GameStateImpl implements GameState {
       if (this.scene.dynamicObjects[i].creationTime < this.gametime - delta) {
         this.scene.dynamicObjects.splice(i, 1);
       }
+    }
+  }
+
+  logDebug(...s: any[]) {
+    if (this.config.debug.debug_on) {
+        console.log(...s);
     }
   }
 }

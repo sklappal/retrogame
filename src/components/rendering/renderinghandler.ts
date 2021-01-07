@@ -27,13 +27,13 @@ export const getRenderingHandler = (
     
 /* eslint-disable-next-line */
   const drawGraph = () => {
-    const count = 20;
+    const count = 30;
     const scale = 2.0;
     const offset = -count*0.5;
 
     const subdivisions = 5;
     
-    for (let i = 0; i <= 20 * subdivisions; i++) {
+    for (let i = 0; i <= 30 * subdivisions; i++) {
       overlayRenderer.drawLine([offset * scale, (i/subdivisions + offset) * scale], [-offset*scale, (i/subdivisions + offset) * scale], "#222222")
       overlayRenderer.drawLine([(i/subdivisions + offset) * scale, offset * scale], [(i/subdivisions + offset) * scale, -offset*scale, ], "#222222")
     }
@@ -66,7 +66,7 @@ export const getRenderingHandler = (
 
 
 
-   //   drawGraph();
+      // drawGraph();
 
     }
   }

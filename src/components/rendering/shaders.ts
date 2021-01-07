@@ -77,7 +77,7 @@ export const vertexShaderSource = `#version 300 es
     
     vec2 dir = vec2(cos(angle), sin(angle));
     float r_out = 1000.0;
-    for (float r = 0.0; r < 1000.0; r += 0.1) {
+    for (float r = 0.2; r < 1000.0; r += 0.1) {
       vec2 pos = uActorPosWorld + r * dir;
       vec3 ndcPos = (uProjectionMatrix * uViewMatrix) * vec3(pos, 1.0);
       vec2 sampling = (ndcPos.xy + vec2(1.0)) * 0.5;      
@@ -253,6 +253,7 @@ export const vertexShaderSource = `#version 300 es
 
     vec3 col = toneMap(material * lightColor);
 
+    // col = backgroundColor;
     fragmentColor = vec4(col, 1.0);
   }
 

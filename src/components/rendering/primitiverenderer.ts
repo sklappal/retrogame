@@ -2,6 +2,9 @@ import { vec2 } from 'gl-matrix'
 import { Model, Circle, Rect } from '../models/models';
 import { CanvasHelper } from './canvashelper';
 
+export enum valign {TOP, CENTER, BOTTOM};
+export enum halign {LEFT, CENTER, RIGHT};
+
 export interface PrimitiveRenderer {
   getContext(): CanvasRenderingContext2D;
   width(): number;
@@ -15,7 +18,7 @@ export interface PrimitiveRenderer {
   fillPoly(points: ReadonlyArray<vec2>, color: string): void
   fillPolyRadial(points: ReadonlyArray<vec2>, radialOrigin: vec2, radius: number, color: string): void  
   
-  drawTextCanvas(pos: vec2, text: string): void
+  drawTextCanvas(row: number, text: string, v: valign, h: halign): void
 }
 
 export const getPrimitiveRenderer = (canvasHelper: CanvasHelper) => {
@@ -121,10 +124,28 @@ export const getPrimitiveRenderer = (canvasHelper: CanvasHelper) => {
     ctx.fill();
   }
 
-  const drawTextCanvas = (pos: vec2, text: string) => {
+  const drawTextCanvas = (row: number, text: string, v: valign, h: halign) => {
     const ctx = getContext();
     ctx.fillStyle = "magenta";
-    ctx.fillText(text, pos[0], pos[1]);
+    let leftOffset = 0;
+    let topOffset = row * 20;
+    if (v === valign.CENTER) {
+      topOffset = height() * 0.5 + topOffset;
+    } 
+    if (v === valign.BOTTOM) {
+      topOffset = height() - topOffset - 10;
+    }
+
+    const textWidth = ctx.measureText(text).width;
+
+    if (h === halign.CENTER) {
+      leftOffset = width() * 0.5 - textWidth*0.5;
+    }
+    if (h === halign.RIGHT) {
+      leftOffset = width() - textWidth - 10;
+    }
+
+    ctx.fillText(text, leftOffset, topOffset);
   }
 
   return {

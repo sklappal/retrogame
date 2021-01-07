@@ -64,6 +64,7 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState, p
       gamestate.createDynamicObject(gamestate.player.pos, dir, circle(0.2, "blue"))
     }
 
+    // DEBUG ACTIONS
     if (controlstate.mouse.buttonsClicked.has(0)) {
       let d = 10000;
       let l:Light;
@@ -75,6 +76,7 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState, p
         }
       }
       gamestate.config.debug.light_index_in_focus = gamestate.config.debug.light_index_in_focus === l!.id ? -1 : l!.id
+      console.log("Clicked position: ", controlstate.mouse.pos());
     }
 
     if (controlstate.keyboard.buttonsClicked.has(KEY_P)) {

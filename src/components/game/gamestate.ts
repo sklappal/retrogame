@@ -46,6 +46,7 @@ export interface Camera   {
 export interface Debug {
   debug_on: boolean
   light_index_in_focus: number
+  seed: string
 }
 
 export interface Config {
@@ -104,9 +105,10 @@ const playerDefault = {
 }
 
 export class GameStateImpl implements GameState {
-  constructor(scene: SceneImpl, graph: Graph) {
+  constructor(scene: SceneImpl, graph: Graph, seed: string) {
     this.scene = scene;
     this.graph = graph;
+    this.config = {debug: {debug_on: false, light_index_in_focus: -1, seed: seed}};
   }
 
   player: Player = playerDefault;
@@ -116,7 +118,7 @@ export class GameStateImpl implements GameState {
         fieldOfView: 40.0
       }
   scene: SceneImpl
-  config: Config = {debug: {debug_on: false, light_index_in_focus: -1}};
+  config: Config
   gametime: number = 0;
   fps: number = 60.0;
   graph: Graph
@@ -213,6 +215,7 @@ export const getGameState = () : GameState => {
   // return new GameStateImpl(scene, {nodes: [], edges: [], getNode: (id:number) => {return {id: 0, i:0, j:0}}})
 
 
-  const generated = generateScene(Math.random().toString());
-  return new GameStateImpl(generated.scene, generated.graph);
+  const seed = Math.round(Math.random()*10000).toString();
+  const generated = generateScene(seed);
+  return new GameStateImpl(generated.scene, generated.graph, seed);
 }

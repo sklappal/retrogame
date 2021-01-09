@@ -14,38 +14,13 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
     throw new Error("Could not initialize framebuffer.");
   }
 
-  const occluderRenderer = getOccluderRenderer(canvasHelper, frameBuffer);
+  const bufferhandler = getBufferHandler(gl);
+
+  const occluderRenderer = getOccluderRenderer(canvasHelper, bufferhandler, frameBuffer);
 
   const visibilityRenderer = getVisibilityRenderer(canvasHelper, frameBuffer, occluderRenderer.getTexture());
 
   const mainRenderer = getMainRenderer(canvasHelper, getBufferHandler(gl), occluderRenderer.getTexture(), visibilityRenderer.getTexture());
-
-
-  // const drawCircleBuffer = vec2.create();
-  // const drawCircle = (radius: number, pos: vec2, color: vec4) => {
-  //   mat3.translate(modelMatrix, modelMatrix, pos);
-  //   mat3.scale(modelMatrix, modelMatrix, vec2.set(drawCircleBuffer, radius, radius));
-  //   const buffer = buffers["circle"];
-  //   drawBuffer(buffer, color);
-  // }
-
-  // const drawRectBuffer = vec2.create();
-  // const drawRect = (width: number, height: number, pos: vec2, color: vec4) => {
-  //   mat3.translate(modelMatrix, modelMatrix, pos);
-  //   mat3.scale(modelMatrix, modelMatrix, vec2.set(drawRectBuffer, width * 0.5, height * 0.5));
-  //   const buffer = buffers["rect"];
-  //   drawBuffer(buffer, color);
-  // }
-
-  // const drawShape = (model: Model, pos: vec2, color: vec4) => {
-  //   if (model.kind === "rect") {
-  //     const shape = model.shape as Rect;
-  //     drawRect(shape.width, shape.height, pos, color);
-  //   } else if (model.kind === "circle") {
-  //     const shape = model.shape as Circle;
-  //     drawCircle(shape.radius, pos, color);
-  //   }
-  // }
 
   // const staticObjectsColor = vec4.fromValues(0.0, 0.0, 0.0, 1.0);
   // const drawStaticObjects = (gamestate: GameState) => {

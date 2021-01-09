@@ -5,57 +5,13 @@ import { vec2, mat3, vec4 } from 'gl-matrix';
 import { GameState } from '../../game/gamestate';
 import { CanvasHelper } from '../canvashelper';
 import { Model, Rect, Circle } from '../../models/models';
+import { BufferHandler } from './bufferhandler';
 
 
-const createRectBuffer = (gl: WebGL2RenderingContext) => {
-  const verts = [
-    -1, -1, 0,
-    1, -1, 0,
-    1, 1, 0,
-
-    -1, -1, 0,
-    1, 1, 0,
-    -1, 1, 0,
-  ];
-
-  const arrays = {
-    position: verts,
-  };
-  return twgl.createBufferInfoFromArrays(gl, arrays);
-}
-
-const createCircleBuffer = (gl: WebGL2RenderingContext) => {
-  const verts = [];
-  for (let i = 0; i < 256; i++) {
-
-    verts.push([Math.cos((i / 256.0) * Math.PI * 2.0), Math.sin((i / 256.0) * Math.PI * 2.0), 0.0])
-    verts.push([Math.cos(((i + 1) / 256.0) * Math.PI * 2.0), Math.sin(((i + 1) / 256.0) * Math.PI * 2.0), 0.0])
-    verts.push([0.0, 0.0, 0.0]);
-  }
-  const arr = new Float32Array(verts.flatMap(v => v));
-  const arrays = {
-    position: arr,
-  };
-
-  return twgl.createBufferInfoFromArrays(gl, arrays);
-}
-
-
-export const getOccluderRenderer = (canvasHelper: CanvasHelper, frameBuffer: WebGLFramebuffer) => {
+export const getOccluderRenderer = (canvasHelper: CanvasHelper, bufferHandler: BufferHandler, frameBuffer: WebGLFramebuffer) => {
   const gl = canvasHelper.getWebGLContext();
 
-  const program = twgl.createProgramInfo(gl, [vertexShaderSource, firstPassFragmentShaderSource]);
-  
-  let currentProgram = program;
-  const setCurrentProgram = (p: twgl.ProgramInfo) => {
-    currentProgram = p;
-    gl.useProgram(p.program);
-  }
-
-  const buffers = {
-    "rect": createRectBuffer(gl),
-    "circle": createCircleBuffer(gl)
-  };
+  const programInfo = twgl.createProgramInfo(gl, [vertexShaderSource, firstPassFragmentShaderSource]);
 
   const modelMatrix = mat3.create();
 
@@ -67,11 +23,8 @@ export const getOccluderRenderer = (canvasHelper: CanvasHelper, frameBuffer: Web
     throw new Error("Could not initialize occluder texture.");
   }
   
-
-  // OCCLUDER RENDERING
-
   const renderOccluders = (gamestate: GameState) => {
-    setCurrentProgram(program);
+    gl.useProgram(programInfo.program);
 
     gl.viewport(0, 0, canvasHelper.width(), canvasHelper.height());
 
@@ -98,7 +51,7 @@ export const getOccluderRenderer = (canvasHelper: CanvasHelper, frameBuffer: Web
       uProjectionMatrix: canvasHelper.view2ndcMatrix(),
     }
 
-    twgl.setUniforms(program, uniforms);
+    twgl.setUniforms(programInfo, uniforms);
   }
 
   const updateOccluderTexture = () => {
@@ -118,17 +71,20 @@ export const getOccluderRenderer = (canvasHelper: CanvasHelper, frameBuffer: Web
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+      occluderTextureWidth = canvasHelper.width();
+      occluderTextureHeight = canvasHelper.height();
     }
 
   }
 
   const drawBuffer = (bufferInfo: BufferInfo, color: vec4) => {
-    twgl.setUniforms(currentProgram, {
+    twgl.setUniforms(programInfo, {
       uModelMatrix: modelMatrix,
       uColor: color
     });
 
-    twgl.setBuffersAndAttributes(gl, currentProgram, bufferInfo);
+    twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo);
     twgl.drawBufferInfo(gl, bufferInfo);
 
     mat3.identity(modelMatrix);
@@ -139,7 +95,7 @@ export const getOccluderRenderer = (canvasHelper: CanvasHelper, frameBuffer: Web
   const drawCircle = (radius: number, pos: vec2, color: vec4) => {
     mat3.translate(modelMatrix, modelMatrix, pos);
     mat3.scale(modelMatrix, modelMatrix, vec2.set(drawCircleBuffer, radius, radius));
-    const buffer = buffers["circle"];
+    const buffer = bufferHandler.getCircleBuffer();
     drawBuffer(buffer, color);
   }
 
@@ -147,7 +103,7 @@ export const getOccluderRenderer = (canvasHelper: CanvasHelper, frameBuffer: Web
   const drawRect = (width: number, height: number, pos: vec2, color: vec4) => {
     mat3.translate(modelMatrix, modelMatrix, pos);
     mat3.scale(modelMatrix, modelMatrix, vec2.set(drawRectBuffer, width * 0.5, height * 0.5));
-    const buffer = buffers["rect"];
+    const buffer = bufferHandler.getRectBuffer();
     drawBuffer(buffer, color);
   }
 

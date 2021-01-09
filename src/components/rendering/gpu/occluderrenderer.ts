@@ -64,6 +64,9 @@ export const getOccluderRenderer = (canvasHelper: CanvasHelper, frameBuffer: Web
   let occluderTextureWidth = -1;
   let occluderTextureHeight = -1;
   const occluderTexture = gl.createTexture();
+  if (occluderTexture === null) {
+    throw new Error("Could not initialize occluder texture.");
+  }
   
 
   // OCCLUDER RENDERING
@@ -131,21 +134,6 @@ export const getOccluderRenderer = (canvasHelper: CanvasHelper, frameBuffer: Web
 
     mat3.identity(modelMatrix);
   }
-
-
-  const backgroundColor = vec4.fromValues(1.0, 1.0, 1.0, 1.0);
-  const drawBackground = () => {
-    const buffer = buffers["rect"];
-
-    mat3.invert(
-      modelMatrix,
-      mat3.multiply(
-        modelMatrix, canvasHelper.view2ndcMatrix(), canvasHelper.world2viewMatrix())
-    );
-
-    drawBuffer(buffer, backgroundColor);
-  }
-
 
 
   const drawCircleBuffer = vec2.create();

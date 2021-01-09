@@ -51,7 +51,7 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
   const mainGlProgramInfo = twgl.createProgramInfo(gl, [vertexShaderSource, mainFragmentShaderSource]);
 
   let currentProgram = firstPassGlProgramInfo;
-  const setCurrentProgram = (p:twgl.ProgramInfo) => {
+  const setCurrentProgram = (p: twgl.ProgramInfo) => {
     currentProgram = p;
     gl.useProgram(p.program);
   }
@@ -77,7 +77,7 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
 
   // FIRST PASS RENDERING
 
-  const startFirstPassRender = () => {
+  const renderOccluders = (gamestate: GameState) => {
     setCurrentProgram(firstPassGlProgramInfo);
 
     gl.viewport(0, 0, canvasHelper.width(), canvasHelper.height());
@@ -94,8 +94,10 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
     gl.clearColor(1.0, 1.0, 1.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     setFirstPassUniforms();
+
+    drawStaticObjects(gamestate);
   }
-  
+
 
   const setFirstPassUniforms = () => {
     const uniforms = {
@@ -131,7 +133,7 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
 
   const calculateVisibilityOnGPU = (gamestate: GameState) => {
     setCurrentProgram(visibilityGlProgramInfo);
-    
+
     gl.viewport(0, 0, VISIBILITY_TEXTURE_WIDTH, 1);
     gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
 
@@ -153,10 +155,10 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
     const xOffset = 0;
     const yOffset = 0;
     const height = 1;
-    
+
     gl.copyTexSubImage2D(gl.TEXTURE_2D, 0, xOffset, yOffset, 0, 0, VISIBILITY_TEXTURE_WIDTH, height);
   }
- 
+
 
   const setVisibilityCalculationUniforms = (gamestate: GameState) => {
     const uniforms = {
@@ -171,7 +173,7 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
 
   // MAIN RENDER
 
-  const startMainRender = (gamestate: GameState) => {
+  const renderMain = (gamestate: GameState) => {
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
     setCurrentProgram(mainGlProgramInfo);
@@ -181,6 +183,9 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     setMainRenderUniforms(gamestate);
+
+    drawBackground();
+
   }
 
   const setMainRenderUniforms = (gamestate: GameState) => {
@@ -194,7 +199,7 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
       uResolution: vec2.fromValues(canvasHelper.width(), canvasHelper.height()),
       uPixelSize: canvasHelper.pixelSize()
     }
-    
+
     twgl.setUniforms(mainGlProgramInfo, uniforms);
 
     setLightUniforms(gamestate.player.pos, gamestate.player.light.color, gamestate.player.light.intensity, 0);
@@ -230,6 +235,8 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
     drawBuffer(buffer, backgroundColor);
   }
 
+
+
   const drawCircleBuffer = vec2.create();
   const drawCircle = (radius: number, pos: vec2, color: vec4) => {
     mat3.translate(modelMatrix, modelMatrix, pos);
@@ -254,6 +261,32 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
       const shape = model.shape as Circle;
       drawCircle(shape.radius, pos, color);
     }
+  }
+
+  const staticObjectsColor = vec4.fromValues(0.0, 0.0, 0.0, 1.0);
+  const drawStaticObjects = (gamestate: GameState) => {
+    gamestate.scene.staticObjects.forEach(so => {
+      drawShape(so.model, so.pos, staticObjectsColor);
+    });
+  }
+
+  const dynamicObjectsColor = vec4.fromValues(0.0, 0.0, 0.0, 1.0);
+  const drawDynamicObjects = (gamestate: GameState) => {
+    gamestate.scene.dynamicObjects.forEach(so => {
+      drawShape(so.model, so.pos, dynamicObjectsColor);
+    });
+  }
+
+  const lightColor = vec4.fromValues(0.1, 0.1, 0.1, 1.0);
+  const drawLights = (gamestate: GameState) => {
+    for (let i = 0; i < gamestate.scene.lights.length; i++) {
+      drawCircle(0.2, gamestate.scene.lights[i].pos, lightColor)
+    }
+  }
+
+  const playerColor = vec4.fromValues(1.0, 0.0, 0.0, 1.0);
+  const drawPlayer = (gamestate: GameState) => {
+    drawCircle(0.5, gamestate.player.pos, playerColor)
   }
 
   const setLightUniforms = (pos: vec2, color: vec3, intensity: number, index: number) => {
@@ -313,12 +346,12 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
 
   const getSubArray = (index: number) => visibilityPixels.subarray(index * VISIBILITY_TEXTURE_WIDTH, (index + 1) * VISIBILITY_TEXTURE_WIDTH)
 
-  const updateVisibilityTexture = (gamestate: GameState) => {
+  const renderVisibility = (gamestate: GameState) => {
     // this one is used for visibility
     // here we fake the intensity to a canvas size dependent intensity so that the visibility calculation works correctly
     // const intensity = Math.max(canvasHelper.widthWorld(), canvasHelper.heightWorld());
 
-      // TODO: Move all of this to happen on GPU
+    // TODO: Move all of this to happen on GPU
 
 
     // if (findVisibilityStrip(-1, gamestate.player.pos, { ...gamestate.player.light, intensity: intensity * intensity / 1000.0, angle: undefined, angularWidth: undefined }, gamestate.scene.staticObjects, getSubArray(0))) {
@@ -336,6 +369,8 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
         updateVisibilityTextureOnGpu(i + 2);
       }
     }
+
+    calculateVisibilityOnGPU(gamestate);
   }
 
   const updateVisibilityTextureOnGpu = (index: number) => {
@@ -348,13 +383,8 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
   }
 
   return {
-    drawShape: drawShape,
-    drawCircle: drawCircle,
-    drawRect: drawRect,
-    drawBackground: drawBackground,
-    startMainRender: startMainRender,
-    startFirstPassRender: startFirstPassRender,
-    updateVisibilityTexture: updateVisibilityTexture,
-    calculateVisibilityOnGPU: calculateVisibilityOnGPU
+    renderMain: renderMain,
+    renderOccluders: renderOccluders,
+    renderVisibility: renderVisibility
   }
 } 

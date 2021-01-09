@@ -1,45 +1,38 @@
 import { CanvasHelper } from '../canvashelper'
 import { GameState } from '../../game/gamestate';
-import { PrimitiveRenderer } from '../primitiverenderer';
-import { getGpuHelper } from './gpuhelper';
+import { getBufferHandler } from './bufferhandler';
+import { getOccluderRenderer } from './occluderrenderer';
+import { getVisibilityRenderer } from './visibilityrenderer';
+import { getMainRenderer } from './mainrenderer';
 
 
 export interface GpuRenderer {
-  getContext(): WebGL2RenderingContext;
-  width(): number;
-  height(): number;
-
   draw(): void;
 }
 
-export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState, overlayRenderer: PrimitiveRenderer) => {
-  const gpuHelper = getGpuHelper(canvasHelper);
+export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState) => {
+  const gl = canvasHelper.getWebGLContext();
 
-  const drawScene = () => {
-
-
-    time(() => {
-      gpuHelper.renderOccluders(gamestate);
-    }, "first pass");
-
-
-    time(() => gpuHelper.renderVisibility(gamestate), "updateVisibilityTexture");
-
-
-    time(() => {
-      gpuHelper.renderMain(gamestate);
-    }, "main render");
-
-    // drawStaticObjects();
-
-    // drawDynamicObjects();
-
-    // drawLights();
-
-    // drawPlayer();
+  const frameBuffer = gl.createFramebuffer();
+  if (frameBuffer == null) {
+    throw new Error("Could not initialize framebuffer.");
   }
 
+  const bufferhandler = getBufferHandler(gl);
 
+  const occluderRenderer = getOccluderRenderer(canvasHelper, bufferhandler, frameBuffer);
+
+  const visibilityRenderer = getVisibilityRenderer(canvasHelper, bufferhandler, frameBuffer, occluderRenderer.getTexture());
+
+  const mainRenderer = getMainRenderer(canvasHelper, getBufferHandler(gl), occluderRenderer.getTexture(), visibilityRenderer.getTexture());
+
+  const draw = () => {
+    time(() => occluderRenderer.renderOccluders(gamestate), "occluderRenderer");
+
+    time(() => visibilityRenderer.renderVisibility(gamestate), "visibilityRenderer");
+
+    time(() => mainRenderer.renderMain(gamestate), "mainRenderer");
+  }
 
   function time(f: () => void, ctx: string) {
     const start = performance.now();
@@ -49,11 +42,8 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState,
   }
 
   return {
-    getContext: canvasHelper.getWebGLContext,
-    width: canvasHelper.width,
-    height: canvasHelper.height,
     draw: () => {
-      time(drawScene, "drawScene");
+      time(draw, "drawScene");
     }
   }
 }

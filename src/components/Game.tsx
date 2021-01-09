@@ -150,7 +150,7 @@ class Game extends React.Component {
     window.onresize = this.resize;
     this.resize();
 
-    const gpuRenderer = getGpuRenderer(getCanvasHelper(this.gpuCanvasRef.current!, gamestate.camera), gamestate, overlayRenderer /*TODO: Remove*/);
+    const gpuRenderer = getGpuRenderer(getCanvasHelper(this.gpuCanvasRef.current!, gamestate.camera), gamestate);
   
     if (gpuRenderer === null) {
       return;

@@ -2,7 +2,7 @@ export const VISIBILITY_TEXTURE_WIDTH = 1024.0
 export const MAX_NUM_LIGHTS = 50
 
 
-export const vertexShaderSource = `#version 300 es
+export const occluderVertexShaderSource = `#version 300 es
   ///////////////////
   // Vertex Shader //
   ///////////////////
@@ -24,7 +24,30 @@ export const vertexShaderSource = `#version 300 es
 
   ///////////////////`;
 
-  export const firstPassFragmentShaderSource  = `#version 300 es
+
+export const mainVertexShaderSource = `#version 300 es
+///////////////////
+// Vertex Shader //
+///////////////////
+
+uniform mat3 uModelMatrix; // model coordinates to world coordinates
+uniform mat3 uViewMatrix; // world coordinates to view
+uniform mat3 uProjectionMatrix; // view coordinates to NDC
+
+in vec3 position;
+out vec2 posWorld;
+out vec2 posVertex;
+
+void main(void) {
+  vec3 positionWorld = uModelMatrix * vec3(position.xy, 1.0);
+  posWorld = positionWorld.xy;
+  posVertex = position.xy;
+  gl_Position = vec4((uProjectionMatrix * uViewMatrix) * positionWorld, 1.0);
+}
+
+///////////////////`;
+
+export const occluderFragmentShaderSource = `#version 300 es
   /////////////////////
   // Fragment Shader //
   /////////////////////
@@ -38,7 +61,7 @@ export const vertexShaderSource = `#version 300 es
 
   /////////////////////`;
 
-  export const visibilityVertexShaderSource = `#version 300 es
+export const visibilityVertexShaderSource = `#version 300 es
   ///////////////////
   // Vertex Shader //
   ///////////////////
@@ -52,7 +75,7 @@ export const vertexShaderSource = `#version 300 es
 
   ///////////////////`;
 
-  export const visibilityFragmentShaderSource = `#version 300 es
+export const visibilityFragmentShaderSource = `#version 300 es
   /////////////////////
   // Fragment Shader //
   /////////////////////
@@ -93,7 +116,7 @@ export const vertexShaderSource = `#version 300 es
 
   /////////////////////`;
 
-  export const mainFragmentShaderSource = `#version 300 es
+export const mainFragmentShaderSource = `#version 300 es
   /////////////////////
   // Fragment Shader //
   /////////////////////
@@ -105,8 +128,7 @@ export const vertexShaderSource = `#version 300 es
 
   in vec2 posWorld;
   in vec2 posVertex;
-  uniform mat3 uModelMatrix;
-
+  
   uniform vec2 uLightPositionsWorld[MAX_NUM_LIGHTS];
   uniform vec3 uLightColors[MAX_NUM_LIGHTS];
   uniform float uLightIntensities[MAX_NUM_LIGHTS];

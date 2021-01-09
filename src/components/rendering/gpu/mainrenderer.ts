@@ -1,4 +1,4 @@
-import { vertexShaderSource, mainFragmentShaderSource } from './shaders';
+import { mainVertexShaderSource, mainFragmentShaderSource } from './shaders';
 import * as twgl from 'twgl.js'
 import { vec2, mat3, vec4, vec3 } from 'gl-matrix';
 import { GameState } from '../../game/gamestate';
@@ -8,7 +8,7 @@ import { BufferHandler, getBufferRenderer } from './bufferhandler';
 export const getMainRenderer = (canvasHelper: CanvasHelper, bufferHandler: BufferHandler, occluderTexture: WebGLTexture, visibilityTexture: WebGLTexture) => {
   const gl = canvasHelper.getWebGLContext();
 
-  const programInfo = twgl.createProgramInfo(gl, [vertexShaderSource, mainFragmentShaderSource]);
+  const programInfo = twgl.createProgramInfo(gl, [mainVertexShaderSource, mainFragmentShaderSource]);
 
   const bufferRenderer = getBufferRenderer(gl, bufferHandler, programInfo);
 

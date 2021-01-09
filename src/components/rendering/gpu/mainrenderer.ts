@@ -1,18 +1,14 @@
 import { mainVertexShaderSource, mainFragmentShaderSource } from './shaders';
 import * as twgl from 'twgl.js'
-import { vec2, mat3, vec4, vec3 } from 'gl-matrix';
+import { vec2, vec3 } from 'gl-matrix';
 import { GameState } from '../../game/gamestate';
 import { CanvasHelper } from '../canvashelper';
-import { BufferHandler, getBufferRenderer } from './bufferhandler';
+import { BufferHandler } from './bufferhandler';
 
 export const getMainRenderer = (canvasHelper: CanvasHelper, bufferHandler: BufferHandler, occluderTexture: WebGLTexture, visibilityTexture: WebGLTexture) => {
   const gl = canvasHelper.getWebGLContext();
 
   const programInfo = twgl.createProgramInfo(gl, [mainVertexShaderSource, mainFragmentShaderSource]);
-
-  const bufferRenderer = getBufferRenderer(gl, bufferHandler, programInfo);
-
-  const modelMatrix = mat3.create();
 
   const frameBuffer = gl.createFramebuffer();
   if (frameBuffer == null) {
@@ -30,7 +26,9 @@ export const getMainRenderer = (canvasHelper: CanvasHelper, bufferHandler: Buffe
 
     setMainRenderUniforms(gamestate);
 
-    drawBackground();
+    const bufferInfo = bufferHandler.getRectBuffer();
+    twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo);
+    twgl.drawBufferInfo(gl, bufferInfo);
   }
 
   const setMainRenderUniforms = (gamestate: GameState) => {
@@ -51,17 +49,6 @@ export const getMainRenderer = (canvasHelper: CanvasHelper, bufferHandler: Buffe
     for (let i = 0; i < gamestate.scene.lights.length; i++) {
       setLightUniforms(gamestate.scene.lights[i].pos, gamestate.scene.lights[i].params.color, gamestate.scene.lights[i].params.intensity, i + 1);
     }
-  }
-
-  const backgroundColor = vec4.fromValues(1.0, 1.0, 1.0, 1.0);
-  const drawBackground = () => {
-    mat3.invert(
-      modelMatrix,
-      mat3.multiply(
-        modelMatrix, canvasHelper.view2ndcMatrix(), canvasHelper.world2viewMatrix())
-    );
-
-    bufferRenderer.drawRect(2.0, 2.0, vec2.fromValues(0.0, 0.0), backgroundColor, modelMatrix);
   }
 
   const setLightUniforms = (pos: vec2, color: vec3, intensity: number, index: number) => {

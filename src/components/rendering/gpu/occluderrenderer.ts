@@ -39,7 +39,6 @@ export const getOccluderRenderer = (canvasHelper: CanvasHelper, bufferHandler: B
     drawStaticObjects(gamestate);
   }
 
-
   const setOccluderUniforms = () => {
     const uniforms = {
       uViewMatrix: canvasHelper.world2viewMatrix(),

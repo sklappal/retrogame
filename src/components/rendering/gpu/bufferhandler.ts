@@ -11,13 +11,13 @@ export interface BufferHandler {
 export const getBufferHandler = (gl: WebGL2RenderingContext):BufferHandler => {
   const createRectBuffer = () => {
     const verts = [
-      -1, -1, 0,
-      1, -1, 0,
-      1, 1, 0,
+      -1, -1, 1,
+      1, -1, 1,
+      1, 1, 1,
 
-      -1, -1, 0,
-      1, 1, 0,
-      -1, 1, 0,
+      -1, -1, 1,
+      1, 1, 1,
+      -1, 1, 1,
     ];
 
     const arrays = {
@@ -30,9 +30,9 @@ export const getBufferHandler = (gl: WebGL2RenderingContext):BufferHandler => {
     const verts = [];
     for (let i = 0; i < 256; i++) {
 
-      verts.push([Math.cos((i / 256.0) * Math.PI * 2.0), Math.sin((i / 256.0) * Math.PI * 2.0), 0.0])
-      verts.push([Math.cos(((i + 1) / 256.0) * Math.PI * 2.0), Math.sin(((i + 1) / 256.0) * Math.PI * 2.0), 0.0])
-      verts.push([0.0, 0.0, 0.0]);
+      verts.push([Math.cos((i / 256.0) * Math.PI * 2.0), Math.sin((i / 256.0) * Math.PI * 2.0), 1.0])
+      verts.push([Math.cos(((i + 1) / 256.0) * Math.PI * 2.0), Math.sin(((i + 1) / 256.0) * Math.PI * 2.0), 1.0])
+      verts.push([0.0, 0.0, 1.0]);
     }
     const arr = new Float32Array(verts.flatMap(v => v));
     const arrays = {

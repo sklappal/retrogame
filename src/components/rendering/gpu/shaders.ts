@@ -16,7 +16,7 @@ export const occluderVertexShaderSource = `#version 300 es
   out vec2 posVertex;
 
   void main(void) {
-    vec3 positionWorld = uModelMatrix * vec3(position.xy, 1.0);
+    vec3 positionWorld = uModelMatrix * position;
     posWorld = positionWorld.xy;
     posVertex = position.xy;
     gl_Position = vec4((uProjectionMatrix * uViewMatrix) * positionWorld, 1.0);
@@ -25,12 +25,11 @@ export const occluderVertexShaderSource = `#version 300 es
   ///////////////////`;
 
 
-export const mainVertexShaderSource = `#version 300 es
+export const mainVertexShaderSource =`#version 300 es
 ///////////////////
 // Vertex Shader //
 ///////////////////
 
-uniform mat3 uModelMatrix; // model coordinates to world coordinates
 uniform mat3 uViewMatrix; // world coordinates to view
 uniform mat3 uProjectionMatrix; // view coordinates to NDC
 
@@ -39,10 +38,10 @@ out vec2 posWorld;
 out vec2 posVertex;
 
 void main(void) {
-  vec3 positionWorld = uModelMatrix * vec3(position.xy, 1.0);
-  posWorld = positionWorld.xy;
+  gl_Position = vec4(position, 1.0);
   posVertex = position.xy;
-  gl_Position = vec4((uProjectionMatrix * uViewMatrix) * positionWorld, 1.0);
+  posWorld =  (inverse(uProjectionMatrix * uViewMatrix) * position).xy;
+  
 }
 
 ///////////////////`;
@@ -66,11 +65,10 @@ export const visibilityVertexShaderSource = `#version 300 es
   // Vertex Shader //
   ///////////////////
   
-  in vec3 in_position;
-  out vec3 position;
+  in vec3 position;
   
   void main(void) {
-    gl_Position = vec4(in_position, 1.0);
+    gl_Position = vec4(position, 1.0);
   }
 
   ///////////////////`;

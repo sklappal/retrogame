@@ -23,6 +23,7 @@ export type Graph = {
 }
 
 export const generateScene = (seed: string) => {
+  seed ="1874";
   const randomGenerator = getRandomGenerator(seed);
   
   const count = 30;

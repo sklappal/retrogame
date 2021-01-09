@@ -7,7 +7,7 @@ import { getPrimitiveRenderer } from './rendering/primitiverenderer';
 import { getCanvasHelper, CanvasHelper } from './rendering/canvashelper';
 
 import '../styles/Game.css'
-import { getGpuRenderer } from './rendering/gpurenderer';
+import { getGpuRenderer } from './rendering/gpu/gpurenderer';
 import { getRenderingHandler } from './rendering/renderinghandler';
 
 

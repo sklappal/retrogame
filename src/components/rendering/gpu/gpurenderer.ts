@@ -1,7 +1,7 @@
-import { CanvasHelper } from './canvashelper'
-import { GameState } from '../game/gamestate';
+import { CanvasHelper } from '../canvashelper'
+import { GameState } from '../../game/gamestate';
 import { vec4 } from 'gl-matrix';
-import { PrimitiveRenderer } from './primitiverenderer';
+import { PrimitiveRenderer } from '../primitiverenderer';
 import { getGpuHelper } from './gpuhelper';
 
 

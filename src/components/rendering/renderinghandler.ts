@@ -1,6 +1,6 @@
 import { PrimitiveRenderer } from './primitiverenderer'
 import { GameState } from '../game/gamestate';
-import { GpuRenderer } from './gpurenderer';
+import { GpuRenderer } from './gpu/gpurenderer';
 import { halign, valign } from './primitiverenderer'
 
 export interface RenderingHandler {

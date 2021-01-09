@@ -2,10 +2,10 @@ import { vertexShaderSource, mainFragmentShaderSource, firstPassFragmentShaderSo
 import * as twgl from 'twgl.js'
 import { BufferInfo } from 'twgl.js'
 import { vec2, mat3, vec4, vec3 } from 'gl-matrix';
-import { GameState } from '../game/gamestate';
-import { CanvasHelper } from './canvashelper';
-import { findVisibilityStrip } from './visibility';
-import { Model, Rect, Circle } from '../models/models';
+import { GameState } from '../../game/gamestate';
+import { CanvasHelper } from '../canvashelper';
+import { findVisibilityStrip } from '../visibility';
+import { Model, Rect, Circle } from '../../models/models';
 
 
 const createRectBuffer = (gl: WebGL2RenderingContext) => {

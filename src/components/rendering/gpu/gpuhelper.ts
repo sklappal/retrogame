@@ -1,4 +1,4 @@
-import { vertexShaderSource, mainFragmentShaderSource, firstPassFragmentShaderSource, VISIBILITY_TEXTURE_WIDTH, MAX_NUM_LIGHTS, visibilityFragmentShaderSource, visibilityVertexShaderSource } from './shaders';
+import { vertexShaderSource, mainFragmentShaderSource, VISIBILITY_TEXTURE_WIDTH, MAX_NUM_LIGHTS, visibilityFragmentShaderSource, visibilityVertexShaderSource } from './shaders';
 import * as twgl from 'twgl.js'
 import { BufferInfo } from 'twgl.js'
 import { vec2, mat3, vec4, vec3 } from 'gl-matrix';
@@ -6,6 +6,7 @@ import { GameState } from '../../game/gamestate';
 import { CanvasHelper } from '../canvashelper';
 import { findVisibilityStrip } from '../visibility';
 import { Model, Rect, Circle } from '../../models/models';
+import { getOccluderRenderer } from './occluderrenderer';
 
 
 const createRectBuffer = (gl: WebGL2RenderingContext) => {
@@ -46,11 +47,11 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
 
   const gl = canvasHelper.getWebGLContext();
 
-  const firstPassGlProgramInfo = twgl.createProgramInfo(gl, [vertexShaderSource, firstPassFragmentShaderSource]);
+
   const visibilityGlProgramInfo = twgl.createProgramInfo(gl, [visibilityVertexShaderSource, visibilityFragmentShaderSource]);
   const mainGlProgramInfo = twgl.createProgramInfo(gl, [vertexShaderSource, mainFragmentShaderSource]);
 
-  let currentProgram = firstPassGlProgramInfo;
+  let currentProgram = visibilityGlProgramInfo;
   const setCurrentProgram = (p: twgl.ProgramInfo) => {
     currentProgram = p;
     gl.useProgram(p.program);
@@ -63,11 +64,15 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
 
   const modelMatrix = mat3.create();
 
-
-  let firstPassTextureWidth = -1;
-  let firstPassTextureHeight = -1;
-  const firstPassTexture = gl.createTexture();
+  
   const frameBuffer = gl.createFramebuffer();
+  if (frameBuffer == null) {
+    throw new Error("Could not initialize framebuffer.");
+  }
+
+  const occluderRenderer = getOccluderRenderer(canvasHelper, frameBuffer);
+
+
   const visibilityCalculationTexture = initVisibilityCalculationTexture();
 
   const visibilityTextureHeight = MAX_NUM_LIGHTS; // player visibility 1 player light 1 other lights n
@@ -75,59 +80,7 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
   const visibilityTexture = initVisibilityTexture();
 
 
-  // FIRST PASS RENDERING
 
-  const renderOccluders = (gamestate: GameState) => {
-    setCurrentProgram(firstPassGlProgramInfo);
-
-    gl.viewport(0, 0, canvasHelper.width(), canvasHelper.height());
-
-    updateFirstPassTexture();
-
-    gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
-
-    // attach the texture as the first color attachment
-    const attachmentPoint = gl.COLOR_ATTACHMENT0;
-    gl.framebufferTexture2D(
-      gl.FRAMEBUFFER, attachmentPoint, gl.TEXTURE_2D, firstPassTexture, /*level*/ 0);
-
-    gl.clearColor(1.0, 1.0, 1.0, 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    setFirstPassUniforms();
-
-    drawStaticObjects(gamestate);
-  }
-
-
-  const setFirstPassUniforms = () => {
-    const uniforms = {
-      uViewMatrix: canvasHelper.world2viewMatrix(),
-      uProjectionMatrix: canvasHelper.view2ndcMatrix(),
-    }
-
-    twgl.setUniforms(firstPassGlProgramInfo, uniforms);
-  }
-
-  const updateFirstPassTexture = () => {
-    if (firstPassTextureWidth !== canvasHelper.width() || firstPassTextureHeight !== canvasHelper.height()) {
-      gl.bindTexture(gl.TEXTURE_2D, firstPassTexture);
-
-      const level = 0;
-      const internalFormat = gl.RGBA;
-      const border = 0;
-      const srcFormat = gl.RGBA;
-      const srcType = gl.UNSIGNED_BYTE;
-
-      gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
-        canvasHelper.width(), canvasHelper.height(), border, srcFormat, srcType, null);
-
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    }
-
-  }
 
   // VISIBILITY CALCULATION ON GPU
 
@@ -164,7 +117,7 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
     const uniforms = {
       uViewMatrix: canvasHelper.world2viewMatrix(),
       uProjectionMatrix: canvasHelper.view2ndcMatrix(),
-      uBackgroundSampler: firstPassTexture,
+      uBackgroundSampler: occluderRenderer.getTexture(),
       uActorPosWorld: gamestate.player.pos
     }
 
@@ -195,7 +148,7 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
       uProjectionMatrix: canvasHelper.view2ndcMatrix(),
       uActualNumberOfLights: gamestate.scene.lights.length + 1, // player light
       uVisibilitySampler: visibilityTexture,
-      uBackgroundSampler: firstPassTexture,
+      uBackgroundSampler: occluderRenderer.getTexture(),
       uResolution: vec2.fromValues(canvasHelper.width(), canvasHelper.height()),
       uPixelSize: canvasHelper.pixelSize()
     }
@@ -237,57 +190,57 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
 
 
 
-  const drawCircleBuffer = vec2.create();
-  const drawCircle = (radius: number, pos: vec2, color: vec4) => {
-    mat3.translate(modelMatrix, modelMatrix, pos);
-    mat3.scale(modelMatrix, modelMatrix, vec2.set(drawCircleBuffer, radius, radius));
-    const buffer = buffers["circle"];
-    drawBuffer(buffer, color);
-  }
+  // const drawCircleBuffer = vec2.create();
+  // const drawCircle = (radius: number, pos: vec2, color: vec4) => {
+  //   mat3.translate(modelMatrix, modelMatrix, pos);
+  //   mat3.scale(modelMatrix, modelMatrix, vec2.set(drawCircleBuffer, radius, radius));
+  //   const buffer = buffers["circle"];
+  //   drawBuffer(buffer, color);
+  // }
 
-  const drawRectBuffer = vec2.create();
-  const drawRect = (width: number, height: number, pos: vec2, color: vec4) => {
-    mat3.translate(modelMatrix, modelMatrix, pos);
-    mat3.scale(modelMatrix, modelMatrix, vec2.set(drawRectBuffer, width * 0.5, height * 0.5));
-    const buffer = buffers["rect"];
-    drawBuffer(buffer, color);
-  }
+  // const drawRectBuffer = vec2.create();
+  // const drawRect = (width: number, height: number, pos: vec2, color: vec4) => {
+  //   mat3.translate(modelMatrix, modelMatrix, pos);
+  //   mat3.scale(modelMatrix, modelMatrix, vec2.set(drawRectBuffer, width * 0.5, height * 0.5));
+  //   const buffer = buffers["rect"];
+  //   drawBuffer(buffer, color);
+  // }
 
-  const drawShape = (model: Model, pos: vec2, color: vec4) => {
-    if (model.kind === "rect") {
-      const shape = model.shape as Rect;
-      drawRect(shape.width, shape.height, pos, color);
-    } else if (model.kind === "circle") {
-      const shape = model.shape as Circle;
-      drawCircle(shape.radius, pos, color);
-    }
-  }
+  // const drawShape = (model: Model, pos: vec2, color: vec4) => {
+  //   if (model.kind === "rect") {
+  //     const shape = model.shape as Rect;
+  //     drawRect(shape.width, shape.height, pos, color);
+  //   } else if (model.kind === "circle") {
+  //     const shape = model.shape as Circle;
+  //     drawCircle(shape.radius, pos, color);
+  //   }
+  // }
 
-  const staticObjectsColor = vec4.fromValues(0.0, 0.0, 0.0, 1.0);
-  const drawStaticObjects = (gamestate: GameState) => {
-    gamestate.scene.staticObjects.forEach(so => {
-      drawShape(so.model, so.pos, staticObjectsColor);
-    });
-  }
+  // const staticObjectsColor = vec4.fromValues(0.0, 0.0, 0.0, 1.0);
+  // const drawStaticObjects = (gamestate: GameState) => {
+  //   gamestate.scene.staticObjects.forEach(so => {
+  //     drawShape(so.model, so.pos, staticObjectsColor);
+  //   });
+  // }
 
-  const dynamicObjectsColor = vec4.fromValues(0.0, 0.0, 0.0, 1.0);
-  const drawDynamicObjects = (gamestate: GameState) => {
-    gamestate.scene.dynamicObjects.forEach(so => {
-      drawShape(so.model, so.pos, dynamicObjectsColor);
-    });
-  }
+  // const dynamicObjectsColor = vec4.fromValues(0.0, 0.0, 0.0, 1.0);
+  // const drawDynamicObjects = (gamestate: GameState) => {
+  //   gamestate.scene.dynamicObjects.forEach(so => {
+  //     drawShape(so.model, so.pos, dynamicObjectsColor);
+  //   });
+  // }
 
-  const lightColor = vec4.fromValues(0.1, 0.1, 0.1, 1.0);
-  const drawLights = (gamestate: GameState) => {
-    for (let i = 0; i < gamestate.scene.lights.length; i++) {
-      drawCircle(0.2, gamestate.scene.lights[i].pos, lightColor)
-    }
-  }
+  // const lightColor = vec4.fromValues(0.1, 0.1, 0.1, 1.0);
+  // const drawLights = (gamestate: GameState) => {
+  //   for (let i = 0; i < gamestate.scene.lights.length; i++) {
+  //     drawCircle(0.2, gamestate.scene.lights[i].pos, lightColor)
+  //   }
+  // }
 
-  const playerColor = vec4.fromValues(1.0, 0.0, 0.0, 1.0);
-  const drawPlayer = (gamestate: GameState) => {
-    drawCircle(0.5, gamestate.player.pos, playerColor)
-  }
+  // const playerColor = vec4.fromValues(1.0, 0.0, 0.0, 1.0);
+  // const drawPlayer = (gamestate: GameState) => {
+  //   drawCircle(0.5, gamestate.player.pos, playerColor)
+  // }
 
   const setLightUniforms = (pos: vec2, color: vec3, intensity: number, index: number) => {
     let location = gl.getUniformLocation(mainGlProgramInfo.program, "uLightPositionsWorld[" + index + "]")
@@ -383,8 +336,8 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
   }
 
   return {
-    renderMain: renderMain,
-    renderOccluders: renderOccluders,
-    renderVisibility: renderVisibility
+    renderOccluders: occluderRenderer.renderOccluders,
+    renderVisibility: renderVisibility,
+    renderMain: renderMain
   }
 } 

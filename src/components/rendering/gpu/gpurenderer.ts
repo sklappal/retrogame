@@ -1,6 +1,5 @@
 import { CanvasHelper } from '../canvashelper'
 import { GameState } from '../../game/gamestate';
-import { vec4 } from 'gl-matrix';
 import { PrimitiveRenderer } from '../primitiverenderer';
 import { getGpuHelper } from './gpuhelper';
 
@@ -15,10 +14,6 @@ export interface GpuRenderer {
 
 export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState, overlayRenderer: PrimitiveRenderer) => {
   const gpuHelper = getGpuHelper(canvasHelper);
-
-
-
-
 
   const drawScene = () => {
 

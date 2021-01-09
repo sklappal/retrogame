@@ -42,7 +42,6 @@ const createCircleBuffer = (gl: WebGL2RenderingContext) => {
 
 
 export const getOccluderRenderer = (canvasHelper: CanvasHelper, frameBuffer: WebGLFramebuffer) => {
-
   const gl = canvasHelper.getWebGLContext();
 
   const program = twgl.createProgramInfo(gl, [vertexShaderSource, firstPassFragmentShaderSource]);

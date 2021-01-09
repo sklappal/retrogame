@@ -1,15 +1,16 @@
 import { vertexShaderSource, mainFragmentShaderSource } from './shaders';
 import * as twgl from 'twgl.js'
-import { BufferInfo } from 'twgl.js'
 import { vec2, mat3, vec4, vec3 } from 'gl-matrix';
 import { GameState } from '../../game/gamestate';
 import { CanvasHelper } from '../canvashelper';
-import { BufferHandler } from './bufferhandler';
+import { BufferHandler, getBufferRenderer } from './bufferhandler';
 
 export const getMainRenderer = (canvasHelper: CanvasHelper, bufferHandler: BufferHandler, occluderTexture: WebGLTexture, visibilityTexture: WebGLTexture) => {
   const gl = canvasHelper.getWebGLContext();
 
   const programInfo = twgl.createProgramInfo(gl, [vertexShaderSource, mainFragmentShaderSource]);
+
+  const bufferRenderer = getBufferRenderer(gl, bufferHandler, programInfo);
 
   const modelMatrix = mat3.create();
 
@@ -52,18 +53,6 @@ export const getMainRenderer = (canvasHelper: CanvasHelper, bufferHandler: Buffe
     }
   }
 
-  const drawBuffer = (bufferInfo: BufferInfo, color: vec4) => {
-    twgl.setUniforms(programInfo, {
-      uModelMatrix: modelMatrix,
-      uColor: color
-    });
-
-    twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo);
-    twgl.drawBufferInfo(gl, bufferInfo);
-
-    mat3.identity(modelMatrix);
-  }
-
   const backgroundColor = vec4.fromValues(1.0, 1.0, 1.0, 1.0);
   const drawBackground = () => {
     mat3.invert(
@@ -72,7 +61,7 @@ export const getMainRenderer = (canvasHelper: CanvasHelper, bufferHandler: Buffe
         modelMatrix, canvasHelper.view2ndcMatrix(), canvasHelper.world2viewMatrix())
     );
 
-    drawBuffer(bufferHandler.getRectBuffer(), backgroundColor);
+    bufferRenderer.drawRect(2.0, 2.0, vec2.fromValues(0.0, 0.0), backgroundColor, modelMatrix);
   }
 
   const setLightUniforms = (pos: vec2, color: vec3, intensity: number, index: number) => {

@@ -3,51 +3,12 @@ import * as twgl from 'twgl.js'
 import { GameState } from '../../game/gamestate';
 import { CanvasHelper } from '../canvashelper';
 import { findVisibilityStrip } from '../visibility';
+import { BufferHandler } from './bufferhandler';
 
-
-const createRectBuffer = (gl: WebGL2RenderingContext) => {
-  const verts = [
-    -1, -1, 0,
-    1, -1, 0,
-    1, 1, 0,
-
-    -1, -1, 0,
-    1, 1, 0,
-    -1, 1, 0,
-  ];
-
-  const arrays = {
-    position: verts,
-  };
-  return twgl.createBufferInfoFromArrays(gl, arrays);
-}
-
-const createCircleBuffer = (gl: WebGL2RenderingContext) => {
-  const verts = [];
-  for (let i = 0; i < 256; i++) {
-
-    verts.push([Math.cos((i / 256.0) * Math.PI * 2.0), Math.sin((i / 256.0) * Math.PI * 2.0), 0.0])
-    verts.push([Math.cos(((i + 1) / 256.0) * Math.PI * 2.0), Math.sin(((i + 1) / 256.0) * Math.PI * 2.0), 0.0])
-    verts.push([0.0, 0.0, 0.0]);
-  }
-  const arr = new Float32Array(verts.flatMap(v => v));
-  const arrays = {
-    position: arr,
-  };
-
-  return twgl.createBufferInfoFromArrays(gl, arrays);
-}
-
-
-export const getVisibilityRenderer = (canvasHelper: CanvasHelper, frameBuffer: WebGLFramebuffer, occluderTexture: WebGLTexture) => {
+export const getVisibilityRenderer = (canvasHelper: CanvasHelper, bufferHandler: BufferHandler, frameBuffer: WebGLFramebuffer, occluderTexture: WebGLTexture) => {
   const gl = canvasHelper.getWebGLContext();
 
   const programInfo = twgl.createProgramInfo(gl, [visibilityVertexShaderSource, visibilityFragmentShaderSource]);
-  
-  const buffers = {
-    "rect": createRectBuffer(gl),
-    "circle": createCircleBuffer(gl)
-  };
 
   const visibilityCalculationTexture = initVisibilityCalculationTexture();
 
@@ -57,7 +18,6 @@ export const getVisibilityRenderer = (canvasHelper: CanvasHelper, frameBuffer: W
   if (visibilityTexture === null) {
     throw new Error("Could not initialize visibility texture.")
   }
-
 
   const calculateVisibilityOnGPU = (gamestate: GameState) => {
     gl.useProgram(programInfo.program);
@@ -73,7 +33,7 @@ export const getVisibilityRenderer = (canvasHelper: CanvasHelper, frameBuffer: W
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     setVisibilityCalculationUniforms(gamestate);
 
-    const bufferInfo = buffers["rect"];
+    const bufferInfo = bufferHandler.getRectBuffer();
     twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo);
     twgl.drawBufferInfo(gl, bufferInfo);
 
@@ -86,7 +46,6 @@ export const getVisibilityRenderer = (canvasHelper: CanvasHelper, frameBuffer: W
     gl.copyTexSubImage2D(gl.TEXTURE_2D, 0, xOffset, yOffset, 0, 0, VISIBILITY_TEXTURE_WIDTH, height);
   }
 
-
   const setVisibilityCalculationUniforms = (gamestate: GameState) => {
     const uniforms = {
       uViewMatrix: canvasHelper.world2viewMatrix(),
@@ -97,7 +56,6 @@ export const getVisibilityRenderer = (canvasHelper: CanvasHelper, frameBuffer: W
 
     twgl.setUniforms(programInfo, uniforms);
   }
-
 
   function initVisibilityCalculationTexture() {
     const texture = gl.createTexture();

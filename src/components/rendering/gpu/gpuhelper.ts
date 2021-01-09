@@ -18,7 +18,7 @@ export const getGpuHelper = (canvasHelper: CanvasHelper) => {
 
   const occluderRenderer = getOccluderRenderer(canvasHelper, bufferhandler, frameBuffer);
 
-  const visibilityRenderer = getVisibilityRenderer(canvasHelper, frameBuffer, occluderRenderer.getTexture());
+  const visibilityRenderer = getVisibilityRenderer(canvasHelper, bufferhandler, frameBuffer, occluderRenderer.getTexture());
 
   const mainRenderer = getMainRenderer(canvasHelper, getBufferHandler(gl), occluderRenderer.getTexture(), visibilityRenderer.getTexture());
 

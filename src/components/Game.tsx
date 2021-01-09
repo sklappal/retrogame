@@ -3,7 +3,6 @@ import { startGame } from './game/game'
 import { requestAnimFrame } from '../utils/utils'
 import { vec2 } from 'gl-matrix'
 import { getGameState } from './game/gamestate';
-import { getPrimitiveRenderer } from './rendering/primitiverenderer';
 import { getCanvasHelper, CanvasHelper } from './rendering/canvashelper';
 
 import '../styles/Game.css'
@@ -145,8 +144,6 @@ class Game extends React.Component {
     window.onkeydown = (e: any) => this.OnKeyDownCB(e);
     window.onkeyup = (e: any) => this.OnKeyUpCB(e);
 
-    const overlayRenderer = getPrimitiveRenderer(overlayCanvasHelper);
-
     window.onresize = this.resize;
     this.resize();
 
@@ -156,7 +153,7 @@ class Game extends React.Component {
       return;
     }
 
-    const renderingHandler = getRenderingHandler(gpuRenderer, overlayRenderer, gamestate);
+    const renderingHandler = getRenderingHandler(gpuRenderer, overlayCanvasHelper, gamestate, this.controlstate);
 
     startGame(renderingHandler, gamestate, this.controlstate, requestAnimFrame());
   }

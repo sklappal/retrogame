@@ -5,22 +5,6 @@ import { CanvasHelper } from './canvashelper';
 export enum valign {TOP, CENTER, BOTTOM};
 export enum halign {LEFT, CENTER, RIGHT};
 
-export interface PrimitiveRenderer {
-  getContext(): CanvasRenderingContext2D;
-  width(): number;
-  height(): number;
-  
-  clearCanvas(color: string): void
-
-  drawLine(from: vec2, to: vec2, color: string): void
-  drawCircle(pos: vec2, radius: number, color: string): void
-  drawModel(pos: vec2, element: Model): void
-  fillPoly(points: ReadonlyArray<vec2>, color: string): void
-  fillPolyRadial(points: ReadonlyArray<vec2>, radialOrigin: vec2, radius: number, color: string): void  
-  
-  drawTextCanvas(row: number, text: string, v: valign, h: halign): void
-}
-
 export const getPrimitiveRenderer = (canvasHelper: CanvasHelper) => {
 
   const getContext: () => CanvasRenderingContext2D = canvasHelper.getContext;
@@ -36,14 +20,41 @@ export const getPrimitiveRenderer = (canvasHelper: CanvasHelper) => {
     ctx.fillRect(0, 0, width(), height());
   }
 
-  const drawCircle = (pos: vec2, radius: number, color = "black") => {
+  const setTransform = (m11: number, m12: number, m21: number, m22: number, dx: number, dy: number) => {
+    getContext().setTransform(m11, m12, m21, m22, dx, dy);
+  }
+
+  const resetTransform = () => getContext().resetTransform()
+
+  const drawCircle = (pos: vec2, radius: number, width = 1.0, color = "black") => {
     const posCanvas = canvasHelper.world2canvas(pos);
     var radiuscanvas = canvasHelper.world2canvasLength(radius);
+    drawCircleCanvas(posCanvas, radiuscanvas, width, color);
+
+  }
+
+  const drawCircleCanvas = (pos: vec2, radius: number, width = 1.0, color = "black") => {
     var ctx = getContext();
     ctx.beginPath();
-    ctx.arc(posCanvas[0], posCanvas[1], radiuscanvas, 0, 2 * Math.PI, false);
-    ctx.fillStyle = color;
-    ctx.fill();
+    ctx.arc(pos[0], pos[1], radius, 0, 2*Math.PI, false);
+    ctx.lineWidth = width;
+    ctx.strokeStyle = color;
+    ctx.stroke();
+  }
+
+  const drawArc = (pos: vec2, radius: number, startAngle: number, endAngle: number, width = 1.0,  color = "black") => {
+    const posCanvas = canvasHelper.world2canvas(pos);
+    var radiuscanvas = canvasHelper.world2canvasLength(radius);
+    drawArcCanvas(posCanvas, radiuscanvas, startAngle, endAngle, width, color);
+  }
+
+  const drawArcCanvas = (pos: vec2, radius: number, startAngle: number, endAngle: number, width = 1.0, color = "black") => {
+    var ctx = getContext();
+    ctx.beginPath();
+    ctx.arc(pos[0], pos[1], radius, startAngle, endAngle, false);
+    ctx.lineWidth = width;
+    ctx.strokeStyle = color;
+    ctx.stroke();
   }
 
   const drawRect = (pos: vec2, w: number, h: number, color = "black") => {
@@ -54,14 +65,18 @@ export const getPrimitiveRenderer = (canvasHelper: CanvasHelper) => {
     ctx.fillRect(posCanvas[0], posCanvas[1], canvasHelper.world2canvasLength(w), canvasHelper.world2canvasLength(h));
   }
   
-  const drawLine = (from: vec2, to: vec2, color = "black") => {
+  const drawLine = (from: vec2, to: vec2, width = 1.0, color = "black") => {
     const fromCanvas = canvasHelper.world2canvas(from)
     const toCanvas = canvasHelper.world2canvas(to)
+    drawLineCanvas(fromCanvas, toCanvas, width, color);
+  }
+
+  const drawLineCanvas = (fromCanvas: vec2, toCanvas: vec2, width = 1.0, color = "black") => {
     var ctx = getContext();
     ctx.beginPath();
     ctx.moveTo(fromCanvas[0], fromCanvas[1]);
     ctx.lineTo(toCanvas[0], toCanvas[1]);
-    
+    ctx.lineWidth = width;
     ctx.strokeStyle = color;
     ctx.stroke(); 
   }
@@ -69,7 +84,7 @@ export const getPrimitiveRenderer = (canvasHelper: CanvasHelper) => {
   const drawModel = (pos: vec2, element: Model) => {
     if (element.kind === "circle") {
       const shape = element.shape as Circle;
-      drawCircle(pos, shape.radius, element.color)
+      drawCircle(pos, shape.radius, 1.0, element.color)
     } else if (element.kind === "rect") {
       const shape = element.shape as Rect;
       drawRect(pos, shape.width, shape.height, element.color)
@@ -150,11 +165,17 @@ export const getPrimitiveRenderer = (canvasHelper: CanvasHelper) => {
 
   return {
     getContext: getContext,
+    setTransform: setTransform,
+    resetTransform: resetTransform,
     width: width,
     height: height,
     clearCanvas: clearCanvas,
     drawCircle: drawCircle,
+    drawCircleCanvas: drawCircleCanvas,
+    drawArc: drawArc,
+    drawArcCanvas: drawArcCanvas,
     drawLine: drawLine,
+    drawLineCanvas: drawLineCanvas,
     drawModel: drawModel,
     fillPolyRadial: fillPolyRadial,
     fillPoly: fillPoly,

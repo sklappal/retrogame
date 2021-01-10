@@ -88,24 +88,37 @@ export const visibilityFragmentShaderSource = `#version 300 es
   uniform mat3 uViewMatrix; // world coordinates to view
   uniform mat3 uProjectionMatrix; // view coordinates to NDC
   uniform vec2 uActorPosWorld;
+  uniform vec2 uLightParameters; // startAngle, stopAngle
 
   out float fragmentDepth;
 
   void main(void) {    
     float angle = (gl_FragCoord.x / float(VISIBILITY_TEXTURE_WIDTH)) * 2.0 * M_PI - M_PI;
 
+    float r_out = 0.0;
+
+    float end = uLightParameters[1] - uLightParameters[0];
+    float test_angle = angle - uLightParameters[0];    
+    if (test_angle < 0.0) {
+      test_angle += 2. * M_PI;
+    }
+    if (test_angle > 2. * M_PI) {
+      test_angle -= 2. * M_PI;
+    }
     
-    vec2 dir = vec2(cos(angle), sin(angle));
-    float r_out = 1000.0;
-    for (float r = 0.2; r < 1000.0; r += 0.1) {
-      vec2 pos = uActorPosWorld + r * dir;
-      vec3 ndcPos = (uProjectionMatrix * uViewMatrix) * vec3(pos, 1.0);
-      vec2 sampling = (ndcPos.xy + vec2(1.0)) * 0.5;      
-      vec3 backgroundColor = texture(uBackgroundSampler, sampling).rgb;
-      if (backgroundColor != vec3(1.0, 1.0, 1.0))
-      {
-        r_out = r;
-        break;
+    if (test_angle <= end) {
+      vec2 dir = vec2(cos(angle), sin(angle));
+      r_out = 1000.0;
+      for (float r = 0.2; r < 1000.0; r += 0.1) {
+        vec2 pos = uActorPosWorld + r * dir;
+        vec3 ndcPos = (uProjectionMatrix * uViewMatrix) * vec3(pos, 1.0);
+        vec2 sampling = (ndcPos.xy + vec2(1.0)) * 0.5;      
+        vec3 backgroundColor = texture(uBackgroundSampler, sampling).rgb;
+        if (backgroundColor != vec3(1.0, 1.0, 1.0))
+        {
+          r_out = r;
+          break;
+        }
       }
     }
 

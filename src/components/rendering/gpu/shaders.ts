@@ -154,6 +154,8 @@ export const mainFragmentShaderSource = `#version 300 es
 
   out vec4 fragmentColor;
 
+  mat3 gaussianKernel = mat3(1., 2., 1., 2., 4., 2., 1., 2., 1.) * (1./16.);
+
 
   // 2D Random
   float random (in vec2 st) {
@@ -234,71 +236,92 @@ export const mainFragmentShaderSource = `#version 300 es
     return min(lightColor, lightColor / (d*d)); 
   }
 
-  float sampleTextureAtAngle(float angle, sampler2D sampler, int textureIndex) {
+  float sampleTextureAtAngle(float angle, int textureIndex) {
     float sampling_angle = (angle + M_PI) / (2.0 * M_PI);
 
     float floatIndex = (float(textureIndex) + 0.5) * (1.0 / float(MAX_NUM_LIGHTS));
 
-    return texture(sampler, vec2(sampling_angle, floatIndex)).r;
+    return texture(uVisibilitySampler, vec2(sampling_angle, floatIndex)).r;
   }
 
-  float getShadowMultiplier(int lightIndex, int textureIndex, vec2 currentPos, sampler2D sampler) {
+  float getShadowMultiplier(int lightIndex, int textureIndex, vec2 currentPos) {
     vec2 lightRay = currentPos - uLightPositionsWorld[lightIndex];
     float lightDistance = length(lightRay);
     float angle = atan(lightRay.y, lightRay.x);
     float delta = (M_PI / float(VISIBILITY_TEXTURE_WIDTH)) * 0.5;
 
-    float sum = 0.0;
-    for (int i = 0; i < 9; i++) {
-      sum += sampleTextureAtAngle(angle+(float(i)-4.0)*delta, sampler, textureIndex) > lightDistance ? 1.0 : 0.0;
-    }
+    // float sum = 0.0;
+    // for (int i = 0; i < 9; i++) {
+    //   sum += sampleTextureAtAngle(angle+(float(i)-4.0)*delta, textureIndex) > lightDistance ? 1.0 : 0.0;
+    // }
     
-    return (sum / 9.0);
+    // return (sum / 9.0);
+
+    return sampleTextureAtAngle(angle, textureIndex) > lightDistance ? 1.0 : 0.0;
   }
 
-  vec3 getLighting(int index, vec2 currentPos, sampler2D sampler) {
+  float getShadowMultiplierBlurred(int lightIndex, int textureIndex, vec2 currentPos) {
+    float d = distance(currentPos,  uLightPositionsWorld[lightIndex]);
+    float delta =  d * 0.05 * uPixelSize/128.0;
+    float total = 0.0;
+    for (int u = 0; u < 3; u+=1) {
+      for (int v = 0; v < 3; v+=1) {
+        float shadow = getShadowMultiplier(lightIndex, textureIndex, currentPos + vec2(float(u)-1., float(v)-1.) * delta);
+        total += shadow * gaussianKernel[u][v];
+      }
+    }
+    return total;
+  }
+
+  vec3 getLighting(int index) {
     vec3 light = getLightContribution(index, posWorld);
-    float shadow = getShadowMultiplier(index, index+1, posWorld, sampler);
+    float shadow = getShadowMultiplierBlurred(index, index+1, posWorld);
     return light*shadow;
   }
 
-  float lightColorBorderMultiplier() {
+  bool pixelOnBorder() {
     float delta = uPixelSize/8.0;
     vec3 bg = texture(uBackgroundSampler, gl_FragCoord.xy / uResolution).rgb;
     for (float u = -1.; u < 2.; u+=1.) {
       for (float v = -1.; v < 2.; v+=1.) {
         vec3 col = texture(uBackgroundSampler, (gl_FragCoord.xy + vec2(u*delta, v*delta)) / uResolution).rgb;
-        if (col != bg) {
-          return 20.0;
+        if (col != bg && bg == vec3(1.)) {
+          return true;
         }
       }
     }
-    return 1.0;
+    return false;
+  }
 
+  float lightColorBorderMultiplier() {
+    return pixelOnBorder() ? 20.0 : 1.0;
   }
 
   void main(void) {
-    float playerLightMultiplier = getShadowMultiplier(0, 0, posWorld, uVisibilitySampler);
+    float playerVisibilityMultiplier = 1.0;
+    playerVisibilityMultiplier = getShadowMultiplierBlurred(0, 0, posWorld);
         
     vec3 light = vec3(0.0);
     for (int i = 0; i < uActualNumberOfLights; i++) {
-      light += getLighting(i, posWorld, uVisibilitySampler) * playerLightMultiplier;
+      light += getLighting(i);
     }
 
     float dist = distance(posWorld, uLightPositionsWorld[0]);
-    vec3 ambientLight = vec3(0.01, 0.01, 0.01) * 2.0/(dist*dist) * playerLightMultiplier;
+    vec3 ambientLight = vec3(0.01, 0.01, 0.01) * 2.0/(dist*dist);
     
-    vec3 lightColor = light + ambientLight;
-    vec3 material = uColor.rgb;
+    vec3 lightColor = (light + ambientLight) * playerVisibilityMultiplier;
+    vec3 material = vec3(1.0, 1.0, 1.0);
 
     vec3 bg = texture(uBackgroundSampler, gl_FragCoord.xy / uResolution).rgb;
-    if (bg == vec3(1.0, 1.0, 1.0)) {
+    if (pixelOnBorder()) {
+      lightColor *= 20.0;
+    }
+    else if (bg == vec3(1.0, 1.0, 1.0)) {
       float noiseFactor = 0.1;
       material = 10.0*(noiseFactor + (1.0-noiseFactor)*vec3(pow(gradientNoise(posWorld*0.1), 2.0)));
-      lightColor *= lightColorBorderMultiplier();
     }
     else {
-      material = bg;
+      material = vec3(0., 0., 0.);
     }
 
     vec3 col = toneMap(material * lightColor);

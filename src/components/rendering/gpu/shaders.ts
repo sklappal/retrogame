@@ -298,6 +298,12 @@ export const mainFragmentShaderSource = `#version 300 es
   }
 
   void main(void) {
+    vec3 bg = texture(uBackgroundSampler, gl_FragCoord.xy / uResolution).rgb;
+    if (bg == vec3(0.0)) {
+      fragmentColor = vec4(bg, 1.0);
+      return;
+    }
+
     float playerVisibilityMultiplier = 1.0;
     playerVisibilityMultiplier = getShadowMultiplierBlurred(0, 0, posWorld);
         
@@ -312,7 +318,7 @@ export const mainFragmentShaderSource = `#version 300 es
     vec3 lightColor = (light + ambientLight) * playerVisibilityMultiplier;
     vec3 material = vec3(1.0, 1.0, 1.0);
 
-    vec3 bg = texture(uBackgroundSampler, gl_FragCoord.xy / uResolution).rgb;
+    
     if (pixelOnBorder()) {
       lightColor *= 20.0;
     }

@@ -3,6 +3,7 @@ import KeyCodes, { KEY_P, KEY_SHIFT } from '../game/keycodes'
 import { vec2 } from "gl-matrix";
 import { circle } from "../models/models";
 import { ControlState } from "../Game";
+import { getCanvasHelper } from "../rendering/canvashelper";
 
 export const getSimulator = (gamestate: GameState, controlstate: ControlState, physicsTimeStepInSeconds: number) => {
 
@@ -32,15 +33,18 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState, p
   }
 
   const handleInputs = () => {
+
     // Camera movement
     const cameraMovement = getMovementVector(KeyCodes.KEY_LEFT, KeyCodes.KEY_RIGHT, KeyCodes.KEY_UP, KeyCodes.KEY_DOWN, controlstate, 50.0);
     gamestate.camera.velocity = cameraMovement;
 
 
     // Player movement
+    
     const mouseToPlayer = vec2.sub(vec2.create(), controlstate.mouse.pos(), gamestate.player.pos)
     
     gamestate.player.aimAngle = Math.atan2(mouseToPlayer[1], mouseToPlayer[0]);
+    
     gamestate.player.light.angle = gamestate.player.aimAngle;
 
     const playerAcceleration = getMovementVector(KeyCodes.KEY_A, KeyCodes.KEY_D, KeyCodes.KEY_W, KeyCodes.KEY_S, controlstate, gamestate.player.acceleration)
@@ -129,6 +133,9 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState, p
   }
 
   const simulate = (frameNumber: number) => {
+    if (!controlstate.mouse.isCaptured) {
+      return;
+    }
     handleInputs();
     handleCamera();
     handlePlayerMovement();

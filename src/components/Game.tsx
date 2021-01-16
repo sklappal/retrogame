@@ -14,12 +14,14 @@ export interface ControlState {
   mouse: {
     pos: () => vec2,
     posCanvas: vec2,
+    movementCanvas: vec2,
     // Actively being pressed
     buttonsPressed: Set<number>,
     // Clicked before this frame
     buttonsClicked: Set<number>,
     // -1, 0 or +1
-    wheelDelta: number
+    wheelDelta: number,
+    isCaptured: boolean
   }
 
   keyboard: {
@@ -56,9 +58,11 @@ class Game extends React.Component {
       mouse: {
         pos: () => vec2.fromValues(0.0, 0.0),
         posCanvas: vec2.fromValues(0.0, 0.0),
+        movementCanvas: vec2.fromValues(0.0, 0.0),
         buttonsPressed: mouseButtonsPressed,
         buttonsClicked: mouseButtonsClicked,
-        wheelDelta: 0.0
+        wheelDelta: 0.0,
+        isCaptured: false
       },
       keyboard: {
         buttonsPressed: keyboardButtonsPressed,
@@ -74,6 +78,13 @@ class Game extends React.Component {
   }
 
   OnMouseDownCB(evt: { button: number; }) {
+    if (this.controlstate.mouse.isCaptured) {
+      document.exitPointerLock();
+    } else {
+      this.overlayCanvasRef.current!.requestPointerLock();
+      this.controlstate.mouse.posCanvas = [this.overlayCanvasRef.current!.width * 0.5, this.overlayCanvasRef.current!.height * 0.5]
+    }
+
     this.controlstate.mouse.buttonsPressed.add(evt.button)
   }
 
@@ -87,11 +98,13 @@ class Game extends React.Component {
     return vec2.fromValues(sx - rect.left, sy - rect.top);
   }
 
-  OnMouseMoveCB(evt: { clientX: any; clientY: any; }, canvashelper: CanvasHelper) {    
-    const x = evt.clientX;
-    const y = evt.clientY;
-    this.controlstate.mouse.posCanvas = this.ScreenToCanvas(x, y);
+  OnMouseMoveCB(evt: {movementX: any; movementY: any; }, canvashelper: CanvasHelper) {    
+    this.controlstate.mouse.movementCanvas = vec2.fromValues(evt.movementX, evt.movementY);
+    vec2.add(this.controlstate.mouse.posCanvas, this.controlstate.mouse.posCanvas, this.controlstate.mouse.movementCanvas);
+
     this.controlstate.mouse.pos = () => canvashelper.canvas2world(this.controlstate.mouse.posCanvas)
+
+    this.controlstate.mouse.isCaptured = (document.pointerLockElement === this.overlayCanvasRef.current!);
   }
   
 

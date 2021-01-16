@@ -32,6 +32,11 @@ export const getRenderingHandler = (
 
   const drawCursor = () => {
 
+    if (!controlstate.mouse.isCaptured) {
+      overlayRenderer.drawTextCanvas(0, "Please click to capture mouse.", valign.CENTER, halign.CENTER);
+      return;
+    }
+
     const color = "rgba(0, 0, 0, 0.5)";
 
     const pos = controlstate.mouse.posCanvas;

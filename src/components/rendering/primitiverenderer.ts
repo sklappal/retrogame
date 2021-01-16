@@ -139,9 +139,9 @@ export const getPrimitiveRenderer = (canvasHelper: CanvasHelper) => {
     ctx.fill();
   }
 
-  const drawTextCanvas = (row: number, text: string, v: valign, h: halign) => {
+  const drawTextCanvas = (row: number, text: string, v: valign, h: halign, color: string = "white") => {
     const ctx = getContext();
-    ctx.fillStyle = "magenta";
+    ctx.fillStyle = color;
     let leftOffset = 0;
     let topOffset = row * 20;
     if (v === valign.CENTER) {

@@ -1,8 +1,11 @@
+- Move scene light calculation to happen on GPU - refactoring
+
+
 - Blur the lightmap based on distance to light sources
 
 
 - Add noise/texture to the black walls everywhere
-- Add nouse/texture to the lights? Some radial effects?
+- Add noise/texture to the lights? Some radial effects?
 - Make light intensity fade at the edges
 
 

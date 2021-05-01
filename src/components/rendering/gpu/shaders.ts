@@ -46,6 +46,28 @@ void main(void) {
 
 ///////////////////`;
 
+
+export const postProcessingVertexShaderSource =`#version 300 es
+///////////////////
+// Vertex Shader //
+///////////////////
+
+uniform mat3 uViewMatrix; // world coordinates to view
+uniform mat3 uProjectionMatrix; // view coordinates to NDC
+
+in vec3 position;
+out vec2 posWorld;
+out vec2 posVertex;
+
+void main(void) {
+  gl_Position = vec4(position, 1.0);
+  posVertex = position.xy;
+  posWorld =  (inverse(uProjectionMatrix * uViewMatrix) * position).xy;
+  
+}
+
+///////////////////`;
+
 export const occluderFragmentShaderSource = `#version 300 es
   /////////////////////
   // Fragment Shader //
@@ -123,6 +145,32 @@ export const visibilityFragmentShaderSource = `#version 300 es
     }
 
     fragmentDepth = r_out;
+  }
+
+  /////////////////////`;
+
+
+  export const postProcessingFragmentShaderSource = `#version 300 es
+  /////////////////////
+  // Fragment Shader //
+  /////////////////////
+  precision highp float;
+
+  #define M_PI 3.1415926535897932384626433832795
+
+  in vec2 posWorld;
+  in vec2 posVertex;
+  
+  uniform vec2 uResolution;
+  uniform sampler2D uBackgroundSampler;
+
+  out vec4 fragmentColor;
+
+  void main(void) {
+
+    vec3 bg = texture(uBackgroundSampler, gl_FragCoord.xy / uResolution).rgb;
+    fragmentColor = vec4(bg, 1.0);
+    
   }
 
   /////////////////////`;

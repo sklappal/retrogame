@@ -15,12 +15,27 @@ export const getMainRenderer = (canvasHelper: CanvasHelper, bufferHandler: Buffe
     throw new Error("Could not initialize framebuffer.");
   }
 
+  const mainTexture = gl.createTexture();
+  if (mainTexture === null) {
+    throw new Error("Could not initialize main texture.");
+  }
+
   const renderMain = (gamestate: GameState) => {
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
     gl.useProgram(programInfo.program);
 
     gl.viewport(0, 0, canvasHelper.width(), canvasHelper.height());
+
+    updateMainTexture();
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+
+    // attach the texture as the first color attachment
+    const attachmentPoint = gl.COLOR_ATTACHMENT0;
+    gl.framebufferTexture2D(
+      gl.FRAMEBUFFER, attachmentPoint, gl.TEXTURE_2D, mainTexture, /*level*/ 0);
+    
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -29,6 +44,31 @@ export const getMainRenderer = (canvasHelper: CanvasHelper, bufferHandler: Buffe
     const bufferInfo = bufferHandler.getRectBuffer();
     twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo);
     twgl.drawBufferInfo(gl, bufferInfo);
+  }
+
+  let textureWidth = -1;
+  let textureHeight = -1;
+  const updateMainTexture = () => {
+    if (textureWidth !== canvasHelper.width() || textureHeight !== canvasHelper.height()) {
+      gl.bindTexture(gl.TEXTURE_2D, mainTexture);
+
+      const level = 0;
+      const internalFormat = gl.RGBA;
+      const border = 0;
+      const srcFormat = gl.RGBA;
+      const srcType = gl.UNSIGNED_BYTE;
+
+      gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,
+        canvasHelper.width(), canvasHelper.height(), border, srcFormat, srcType, null);
+
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+      textureWidth = canvasHelper.width();
+      textureHeight = canvasHelper.height();
+    }
   }
 
   const setMainRenderUniforms = (gamestate: GameState) => {
@@ -63,6 +103,7 @@ export const getMainRenderer = (canvasHelper: CanvasHelper, bufferHandler: Buffe
   }
   
   return {
-    renderMain: renderMain
+    renderMain: renderMain,
+    getTexture: () => mainTexture
   }
 } 

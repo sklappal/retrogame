@@ -3,7 +3,6 @@ import KeyCodes, { KEY_P, KEY_SHIFT } from '../game/keycodes'
 import { vec2 } from "gl-matrix";
 import { circle } from "../models/models";
 import { ControlState } from "../Game";
-import { getCanvasHelper } from "../rendering/canvashelper";
 
 export const getSimulator = (gamestate: GameState, controlstate: ControlState, physicsTimeStepInSeconds: number) => {
 

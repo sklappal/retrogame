@@ -36,4 +36,13 @@ Lighting is calculated per fragment with the visibility texture for each light s
 Texturing is generated on the fly with some kind of procedural noise algorithm
 
 INPUT: Game State, Lights, Visiblity Texture, Occluders
-OUTPUT: Lighting applied to the scene rendered on the screen
+OUTPUT: Lighting applied to the scene  = Main Texture
+
+
+## Post Processing
+
+Apply post processing effects on the main texture
+
+INPUT: Main texture
+OUTPUT: Render post processed texture on screen
+

@@ -4,6 +4,7 @@ import { getBufferHandler } from './bufferhandler';
 import { getOccluderRenderer } from './occluderrenderer';
 import { getVisibilityRenderer } from './visibilityrenderer';
 import { getMainRenderer } from './mainrenderer';
+import { getPostProcessingRenderer } from './postprocessingrenderer';
 
 
 export interface GpuRenderer {
@@ -24,7 +25,9 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
 
   const visibilityRenderer = getVisibilityRenderer(canvasHelper, bufferhandler, frameBuffer, occluderRenderer.getTexture());
 
-  const mainRenderer = getMainRenderer(canvasHelper, getBufferHandler(gl), occluderRenderer.getTexture(), visibilityRenderer.getTexture());
+  const mainRenderer = getMainRenderer(canvasHelper, bufferhandler, occluderRenderer.getTexture(), visibilityRenderer.getTexture());
+
+  const postProcessingRenderer = getPostProcessingRenderer(canvasHelper, bufferhandler, mainRenderer.getTexture());
 
   const draw = () => {
     time(() => occluderRenderer.renderOccluders(gamestate), "occluderRenderer");
@@ -32,6 +35,8 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
     time(() => visibilityRenderer.renderVisibility(gamestate), "visibilityRenderer");
 
     time(() => mainRenderer.renderMain(gamestate), "mainRenderer");
+
+    time(() => postProcessingRenderer.renderPostProcess(gamestate), "postProcessingRenderer");
   }
 
   function time(f: () => void, ctx: string) {

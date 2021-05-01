@@ -82,7 +82,7 @@ class Game extends React.Component {
       document.exitPointerLock();
     } else {
       this.overlayCanvasRef.current!.requestPointerLock();
-      this.controlstate.mouse.posCanvas = [this.overlayCanvasRef.current!.width * 0.5, this.overlayCanvasRef.current!.height * 0.5]
+      
     }
 
     this.controlstate.mouse.buttonsPressed.add(evt.button)
@@ -98,11 +98,12 @@ class Game extends React.Component {
     return vec2.fromValues(sx - rect.left, sy - rect.top);
   }
 
-  OnMouseMoveCB(evt: {movementX: any; movementY: any; }, canvashelper: CanvasHelper) {    
-    this.controlstate.mouse.movementCanvas = vec2.fromValues(evt.movementX, evt.movementY);
-    vec2.add(this.controlstate.mouse.posCanvas, this.controlstate.mouse.posCanvas, this.controlstate.mouse.movementCanvas);
-
-    this.controlstate.mouse.pos = () => canvashelper.canvas2world(this.controlstate.mouse.posCanvas)
+  OnMouseMoveCB(evt: {movementX: any; movementY: any; }, canvashelper: CanvasHelper) {  
+    if (this.controlstate.mouse.isCaptured)   {
+      this.controlstate.mouse.movementCanvas = vec2.fromValues(evt.movementX, evt.movementY);
+      vec2.add(this.controlstate.mouse.posCanvas, this.controlstate.mouse.posCanvas, this.controlstate.mouse.movementCanvas);
+      this.controlstate.mouse.pos = () => canvashelper.canvas2world(this.controlstate.mouse.posCanvas)
+    }
   }
   
 
@@ -145,7 +146,7 @@ class Game extends React.Component {
 
     const overlayCanvas = this.overlayCanvasRef.current!;
     const overlayCanvasHelper =  getCanvasHelper(overlayCanvas, gamestate.camera);
-
+    
     overlayCanvas.onmousedown = (e: { button: number; }) => this.OnMouseDownCB(e);
     overlayCanvas.onmouseup = (e: any) => this.OnMouseUpCB(e);
     overlayCanvas.onmousemove = (e: any) => this.OnMouseMoveCB(e, overlayCanvasHelper);
@@ -160,6 +161,9 @@ class Game extends React.Component {
 
     window.onresize = this.resize;
     this.resize();
+
+    this.controlstate.mouse.posCanvas = [this.overlayCanvasRef.current!.width * 0.5, this.overlayCanvasRef.current!.height * 0.5]
+    this.controlstate.mouse.pos = () => overlayCanvasHelper.canvas2world(this.controlstate.mouse.posCanvas)
 
     const gpuRenderer = getGpuRenderer(getCanvasHelper(this.gpuCanvasRef.current!, gamestate.camera), gamestate);
   

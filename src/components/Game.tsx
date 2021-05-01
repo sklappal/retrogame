@@ -103,8 +103,6 @@ class Game extends React.Component {
     vec2.add(this.controlstate.mouse.posCanvas, this.controlstate.mouse.posCanvas, this.controlstate.mouse.movementCanvas);
 
     this.controlstate.mouse.pos = () => canvashelper.canvas2world(this.controlstate.mouse.posCanvas)
-
-    this.controlstate.mouse.isCaptured = (document.pointerLockElement === this.overlayCanvasRef.current!);
   }
   
 
@@ -153,6 +151,9 @@ class Game extends React.Component {
     overlayCanvas.onmousemove = (e: any) => this.OnMouseMoveCB(e, overlayCanvasHelper);
     overlayCanvas.addEventListener("mousewheel", (e:any) => this.OnMouseWheelCB(e), false);
     overlayCanvas.addEventListener("DOMMouseScroll", (e:any) => this.OnMouseWheelCB(e), false);
+    document.addEventListener('pointerlockchange', (event) => {
+      this.controlstate.mouse.isCaptured = (document.pointerLockElement === this.overlayCanvasRef.current!);
+    });
 
     window.onkeydown = (e: any) => this.OnKeyDownCB(e);
     window.onkeyup = (e: any) => this.OnKeyUpCB(e);

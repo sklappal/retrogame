@@ -19,7 +19,7 @@ export const getRenderingHandler = (
   const overlayRenderer = getPrimitiveRenderer(canvasHelper);
 
   const drawGpu = () => {
-    gpuRenderer.draw();
+    gpuRenderer.draw(controlstate);
   }
 
   const drawDebugInfo = () => {

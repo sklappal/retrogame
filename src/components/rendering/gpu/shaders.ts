@@ -163,13 +163,19 @@ export const visibilityFragmentShaderSource = `#version 300 es
   
   uniform vec2 uResolution;
   uniform sampler2D uBackgroundSampler;
+  uniform bool uIsPaused;
 
   out vec4 fragmentColor;
 
   void main(void) {
 
     vec3 bg = texture(uBackgroundSampler, gl_FragCoord.xy / uResolution).rgb;
-    fragmentColor = vec4(bg, 1.0);
+    if (uIsPaused) {
+      float color = 0.2126 * bg.r + 0.7152 * bg.g + 0.0722 * bg.b;
+      fragmentColor = vec4(color, color, color, 1.0);
+    } else {
+      fragmentColor = vec4(bg, 1.0);
+    }
     
   }
 

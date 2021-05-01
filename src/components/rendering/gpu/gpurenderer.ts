@@ -5,10 +5,11 @@ import { getOccluderRenderer } from './occluderrenderer';
 import { getVisibilityRenderer } from './visibilityrenderer';
 import { getMainRenderer } from './mainrenderer';
 import { getPostProcessingRenderer } from './postprocessingrenderer';
+import { ControlState } from '../../Game';
 
 
 export interface GpuRenderer {
-  draw(): void;
+  draw(controlstate: ControlState): void;
 }
 
 export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState) => {
@@ -29,14 +30,14 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
 
   const postProcessingRenderer = getPostProcessingRenderer(canvasHelper, bufferhandler, mainRenderer.getTexture());
 
-  const draw = () => {
+  const draw = (controlstate: ControlState) => {
     time(() => occluderRenderer.renderOccluders(gamestate), "occluderRenderer");
 
     time(() => visibilityRenderer.renderVisibility(gamestate), "visibilityRenderer");
 
     time(() => mainRenderer.renderMain(gamestate), "mainRenderer");
 
-    time(() => postProcessingRenderer.renderPostProcess(gamestate), "postProcessingRenderer");
+    time(() => postProcessingRenderer.renderPostProcess(controlstate), "postProcessingRenderer");
   }
 
   function time(f: () => void, ctx: string) {
@@ -47,8 +48,8 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
   }
 
   return {
-    draw: () => {
-      time(draw, "drawScene");
+    draw: (controlstate: ControlState) => {
+      time(() => draw(controlstate), "drawScene");
     }
   }
 }

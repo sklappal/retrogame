@@ -9,8 +9,11 @@ import { GameState } from '../../game/gamestate';
 export const getPostProcessingRenderer = (canvasHelper: CanvasHelper, bufferHandler: BufferHandler, mainTexture: WebGLTexture) => {
   const gl = canvasHelper.getWebGLContext();
 
-  const programInfo = twgl.createProgramInfo(gl, [postProcessingVertexShaderSource, postProcessingFragmentShaderSource]);
-
+  const programInfo = twgl.createProgramInfo(gl, [postProcessingVertexShaderSource, postProcessingFragmentShaderSource], (msg, line) => {
+    console.log(msg);
+    throw new Error("Failed to compile GL program.")
+  });
+  
   const renderPostProcess = (gamestate: GameState, controlstate: ControlState) => {
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
@@ -106,6 +109,11 @@ const postProcessingFragmentShaderSource = `#version 300 es
       color = getPixel(0);
     }
     
+    // Vignette-like effect
+    float distance = distance(gl_FragCoord.xy / uResolution, vec2(0.5, 0.5));
+    color = color * clamp(1.0 - 5.*(distance-0.35), 0.0, 1.0);
+
+
     fragmentColor = vec4(color, 1.0);
     
   }

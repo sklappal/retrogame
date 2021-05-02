@@ -8,7 +8,10 @@ import { BufferHandler, getBufferRenderer } from './bufferhandler';
 export const getOccluderRenderer = (canvasHelper: CanvasHelper, bufferHandler: BufferHandler, frameBuffer: WebGLFramebuffer) => {
   const gl = canvasHelper.getWebGLContext();
 
-  const programInfo = twgl.createProgramInfo(gl, [occluderVertexShaderSource, occluderFragmentShaderSource]);
+  const programInfo = twgl.createProgramInfo(gl, [occluderVertexShaderSource, occluderFragmentShaderSource], (msg, line) => {
+    console.log(msg);
+    throw new Error("Failed to compile GL program.")
+  });
 
   const bufferRenderer = getBufferRenderer(gl, bufferHandler, programInfo);
 

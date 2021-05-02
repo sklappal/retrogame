@@ -9,8 +9,10 @@ import { vec2 } from 'gl-matrix';
 export const getVisibilityRenderer = (canvasHelper: CanvasHelper, bufferHandler: BufferHandler, frameBuffer: WebGLFramebuffer, occluderTexture: WebGLTexture) => {
   const gl = canvasHelper.getWebGLContext();
 
-  const programInfo = twgl.createProgramInfo(gl, [visibilityVertexShaderSource, visibilityFragmentShaderSource]);
-
+  const programInfo = twgl.createProgramInfo(gl, [visibilityVertexShaderSource, visibilityFragmentShaderSource], (msg, line) => {
+    console.log(msg);
+    throw new Error("Failed to compile GL program.")
+  });
   // This is a 1024 * 1 texture which is used to calculate the visibility for one light
   const visibilityCalculationTexture = initVisibilityCalculationTexture();
 

@@ -8,7 +8,10 @@ import { MAX_NUM_LIGHTS, VISIBILITY_TEXTURE_WIDTH } from './constants';
 export const getMainRenderer = (canvasHelper: CanvasHelper, bufferHandler: BufferHandler, occluderTexture: WebGLTexture, visibilityTexture: WebGLTexture) => {
   const gl = canvasHelper.getWebGLContext();
 
-  const programInfo = twgl.createProgramInfo(gl, [mainVertexShaderSource, mainFragmentShaderSource]);
+  const programInfo = twgl.createProgramInfo(gl, [mainVertexShaderSource, mainFragmentShaderSource], (msg, line) => {
+    console.log(msg);
+    throw new Error("Failed to compile GL program.")
+  });
 
   const frameBuffer = gl.createFramebuffer();
   if (frameBuffer == null) {

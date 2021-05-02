@@ -388,6 +388,7 @@ export const mainFragmentShaderSource = `#version 300 es
 
     // col = bg;
     fragmentColor = vec4(col, 1.0);
+    //fragmentColor = vec4(1.0);
     
   }
 

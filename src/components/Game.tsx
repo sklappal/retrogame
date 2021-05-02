@@ -153,6 +153,11 @@ class Game extends React.Component {
     overlayCanvas.addEventListener("mousewheel", (e:any) => this.OnMouseWheelCB(e), false);
     overlayCanvas.addEventListener("DOMMouseScroll", (e:any) => this.OnMouseWheelCB(e), false);
     document.addEventListener('pointerlockchange', (event) => {
+      if (document.pointerLockElement === this.overlayCanvasRef.current!) {
+        this.overlayCanvasRef.current!.classList.add('no-cursor');        
+      } else {
+        this.overlayCanvasRef.current!.classList.remove('no-cursor');
+      }
       this.controlstate.mouse.isCaptured = (document.pointerLockElement === this.overlayCanvasRef.current!);
     });
 

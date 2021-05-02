@@ -7,7 +7,7 @@ import { ControlState } from "../Game";
 export const getSimulator = (gamestate: GameState, controlstate: ControlState, physicsTimeStepInSeconds: number) => {
 
   const FRICTION_COEFFICIENT = 0.8
-  const CAMERA_MAX_DISTANCE_FROM_PLAYER_RELATIVE_TO_FOV = 0.2;
+  const CAMERA_MAX_DISTANCE_FROM_PLAYER_RELATIVE_TO_FOV = 0.1;
 
   const getMovemement = (key1: number, key2: number, controlstate: ControlState) => {
     if (controlstate.isKeyPressed(key1) || controlstate.isKeyPressed(key2)) {

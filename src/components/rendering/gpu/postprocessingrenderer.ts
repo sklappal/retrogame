@@ -3,6 +3,7 @@ import { CanvasHelper } from '../canvashelper';
 import { BufferHandler } from './bufferhandler';
 import { vec2 } from 'gl-matrix';
 import { ControlState } from '../../Game';
+import { GameState } from '../../game/gamestate';
 
 
 export const getPostProcessingRenderer = (canvasHelper: CanvasHelper, bufferHandler: BufferHandler, mainTexture: WebGLTexture) => {
@@ -10,7 +11,7 @@ export const getPostProcessingRenderer = (canvasHelper: CanvasHelper, bufferHand
 
   const programInfo = twgl.createProgramInfo(gl, [postProcessingVertexShaderSource, postProcessingFragmentShaderSource]);
 
-  const renderPostProcess = (controlstate: ControlState) => {
+  const renderPostProcess = (gamestate: GameState, controlstate: ControlState) => {
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
     gl.useProgram(programInfo.program);
@@ -18,7 +19,7 @@ export const getPostProcessingRenderer = (canvasHelper: CanvasHelper, bufferHand
 
     gl.viewport(0, 0, canvasHelper.width(), canvasHelper.height());
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    setPostProcessingUniforms(controlstate);
+    setPostProcessingUniforms(gamestate, controlstate);
 
     const bufferInfo = bufferHandler.getRectBuffer();
     twgl.setBuffersAndAttributes(gl, programInfo, bufferInfo);
@@ -26,13 +27,14 @@ export const getPostProcessingRenderer = (canvasHelper: CanvasHelper, bufferHand
 
   }
 
-  const setPostProcessingUniforms = (controlstate: ControlState) => {
+  const setPostProcessingUniforms = (gamestate: GameState, controlstate: ControlState) => {
     const uniforms = {
       uViewMatrix: canvasHelper.world2viewMatrix(),
       uProjectionMatrix: canvasHelper.view2ndcMatrix(),
       uBackgroundSampler: mainTexture,
       uResolution: vec2.fromValues(canvasHelper.width(), canvasHelper.height()),
-      uIsPaused: !controlstate.mouse.isCaptured
+      uIsPaused: !controlstate.mouse.isCaptured,
+      uGametime: gamestate.gametime,
     }
     twgl.setUniforms(programInfo, uniforms);
   }
@@ -78,18 +80,33 @@ const postProcessingFragmentShaderSource = `#version 300 es
   uniform vec2 uResolution;
   uniform sampler2D uBackgroundSampler;
   uniform bool uIsPaused;
+  uniform float uGametime;
 
   out vec4 fragmentColor;
 
-  void main(void) {
-
-    vec3 bg = texture(uBackgroundSampler, gl_FragCoord.xy / uResolution).rgb;
-    if (uIsPaused) {
-      float color = 0.2126 * bg.r + 0.7152 * bg.g + 0.0722 * bg.b;
-      fragmentColor = vec4(color, color, color, 1.0);
-    } else {
-      fragmentColor = vec4(bg, 1.0);
+  vec3 getPixel(int samplingradius) {
+    vec3 pixel;
+    float scaler = 0.0;
+    for (int x = -samplingradius; x < samplingradius + 1; x++) {
+      for (int y = -samplingradius; y < samplingradius + 1; y++) {
+        pixel += texture(uBackgroundSampler, (gl_FragCoord.xy + vec2(x, y))/ uResolution).rgb;
+        scaler += 1.0;
+      }
     }
+    return pixel / scaler;
+  }
+
+  void main(void) {
+    vec3 color;
+    if (uIsPaused) {
+      color = getPixel(4);
+      color = vec3(0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b);
+    } 
+    else {
+      color = getPixel(0);
+    }
+    
+    fragmentColor = vec4(color, 1.0);
     
   }
 

@@ -37,7 +37,7 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
 
     time(() => mainRenderer.renderMain(gamestate), "mainRenderer");
 
-    time(() => postProcessingRenderer.renderPostProcess(controlstate), "postProcessingRenderer");
+    time(() => postProcessingRenderer.renderPostProcess(gamestate, controlstate), "postProcessingRenderer");
   }
 
   function time(f: () => void, ctx: string) {

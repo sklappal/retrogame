@@ -1,4 +1,3 @@
-import { occluderVertexShaderSource, occluderFragmentShaderSource } from './shaders';
 import * as twgl from 'twgl.js'
 import { vec4 } from 'gl-matrix';
 import { GameState } from '../../game/gamestate';
@@ -85,3 +84,39 @@ export const getOccluderRenderer = (canvasHelper: CanvasHelper, bufferHandler: B
     getTexture: () => occluderTexture
   }
 } 
+
+const occluderVertexShaderSource = `#version 300 es
+  ///////////////////
+  // Vertex Shader //
+  ///////////////////
+  
+  uniform mat3 uModelMatrix; // model coordinates to world coordinates
+  uniform mat3 uViewMatrix; // world coordinates to view
+  uniform mat3 uProjectionMatrix; // view coordinates to NDC
+  
+  in vec3 position;
+  out vec2 posWorld;
+  out vec2 posVertex;
+
+  void main(void) {
+    vec3 positionWorld = uModelMatrix * position;
+    posWorld = positionWorld.xy;
+    posVertex = position.xy;
+    gl_Position = vec4((uProjectionMatrix * uViewMatrix) * positionWorld, 1.0);
+  }
+
+  ///////////////////`;
+
+  const occluderFragmentShaderSource = `#version 300 es
+  /////////////////////
+  // Fragment Shader //
+  /////////////////////
+  precision highp float;
+
+  out vec4 fragmentColor;
+
+  void main(void) {
+    fragmentColor = vec4(0.0, 0.0, 0.0, 1.0);
+  }
+
+  /////////////////////`;

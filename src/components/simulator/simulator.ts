@@ -135,6 +135,7 @@ export const getSimulator = (gamestate: GameState, controlstate: ControlState, p
     if (!controlstate.mouse.isCaptured) {
       return;
     }
+    gamestate.gametime += physicsTimeStepInSeconds;
     handleInputs();
     handleCamera();
     handlePlayerMovement();

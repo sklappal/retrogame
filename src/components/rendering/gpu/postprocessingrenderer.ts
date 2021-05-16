@@ -99,6 +99,8 @@ const postProcessingFragmentShaderSource = `#version 300 es
     return pixel / scaler;
   }
 
+
+
   void main(void) {
     vec3 color;
     if (uIsPaused) {

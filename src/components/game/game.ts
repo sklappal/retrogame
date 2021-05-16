@@ -56,7 +56,6 @@ export const startGame = (renderingHandler: RenderingHandler, gamestate: GameSta
       timeHandler.setAccumulator(5 * PHYSICS_TIME_STEP);
     }
 
-    gamestate.gametime = timeHandler.gameTimeMs() / 1000.0;
     gamestate.fps = timeHandler.calculateFPS();
     
     while (timeHandler.getAccumulator() >= PHYSICS_TIME_STEP)

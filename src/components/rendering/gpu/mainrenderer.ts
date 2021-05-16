@@ -83,7 +83,8 @@ export const getMainRenderer = (canvasHelper: CanvasHelper, bufferHandler: Buffe
       uVisibilitySampler: visibilityTexture,
       uBackgroundSampler: occluderTexture,
       uResolution: vec2.fromValues(canvasHelper.width(), canvasHelper.height()),
-      uPixelSize: canvasHelper.pixelSize()
+      uPixelSize: canvasHelper.pixelSize(),
+      uGametime: gamestate.gametime,
     }
 
     twgl.setUniforms(programInfo, uniforms);
@@ -128,6 +129,7 @@ const mainFragmentShaderSource = `#version 300 es
   uniform vec3 uLightColors[MAX_NUM_LIGHTS];
   uniform float uLightIntensities[MAX_NUM_LIGHTS];
   uniform int uActualNumberOfLights;
+  uniform float uGametime;
 
   uniform vec4 uColor;
   
@@ -152,6 +154,15 @@ const mainFragmentShaderSource = `#version 300 es
     st = vec2( dot(st,vec2(127.1,311.7)),
               dot(st,vec2(269.5,183.3)) );
     return -1.0 + 2.0*fract(sin(st)*43758.5453123);
+  }
+
+  float impulse(float period, float offset) 
+  {
+      float f = 1.0/period;
+      float t = f * (uGametime + offset);
+      float x = (t-floor(t));
+      float w = 0.05*f;
+      return smoothstep(0.5-w, 0.5, x) - smoothstep(0.5, 0.5+w, x);
   }
 
 
@@ -216,7 +227,8 @@ const mainFragmentShaderSource = `#version 300 es
 
   vec3 getLightContribution(int index, vec2 currentPosition) {
     float d = distance(currentPosition,  uLightPositionsWorld[index]);
-    vec3 lightColor = uLightColors[index] * uLightIntensities[index];
+    float mult = 1.0-impulse(1.0, 0.0);
+    vec3 lightColor = uLightColors[index] * uLightIntensities[index] * mult;
     return min(lightColor, lightColor / (d*d)); 
   }
 

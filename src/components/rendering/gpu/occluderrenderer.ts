@@ -77,7 +77,25 @@ export const getOccluderRenderer = (canvasHelper: CanvasHelper, bufferHandler: B
 
   const staticObjectsColor = vec4.fromValues(0.0, 0.0, 0.0, 1.0);
   const drawStaticObjects = (gamestate: GameState) => {
+    const width = canvasHelper.width();
+    const height = canvasHelper.height();
+
     gamestate.scene.staticObjects.forEach(so => {
+      // Culling
+      const viewPos = canvasHelper.world2canvas(so.pos);
+      const boudingBoxWidthCanvas = canvasHelper.world2canvasLength(so.model.halfBoundingBox[0]);
+      const boudingBoxHeightCanvas = canvasHelper.world2canvasLength(so.model.halfBoundingBox[1]);
+
+      if (viewPos[0] + boudingBoxWidthCanvas < 0 || viewPos[0] - boudingBoxWidthCanvas > width)
+      {
+        return;
+      }
+
+      if (viewPos[1] + boudingBoxHeightCanvas < 0 || viewPos[1] - boudingBoxHeightCanvas > height)
+      {
+        return;
+      }
+
       bufferRenderer.drawShape(so.model, so.pos, staticObjectsColor);
     });
   }

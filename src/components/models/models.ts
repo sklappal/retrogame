@@ -12,6 +12,7 @@ export interface Circle {
 export interface Model {
   color: string;
   shape: Rect | Circle;
+  halfBoundingBox: vec2;
   kind: string
   isInside: (pos: vec2) => boolean;
 }
@@ -21,6 +22,7 @@ export const circle = (radius: number, color = "black") : Model => {
     shape: { radius: radius},
     kind: "circle",
     color: color,
+    halfBoundingBox: vec2.fromValues(radius, radius),
     isInside: pos => vec2.squaredLength(pos) <= radius*radius
   }
 }
@@ -35,6 +37,7 @@ export const rect = (width = 5, height = 5, color = "black") : Model => {
     shape: { width: width, height: height},
     kind: "rect",
     color: color,
+    halfBoundingBox: vec2.fromValues(width, height),
     isInside: pos => -width*0.5 <= pos[0] && pos[0] <= width*0.5 && -height*0.5 <= pos[1] && pos[1] <= height*0.5
   }
 }

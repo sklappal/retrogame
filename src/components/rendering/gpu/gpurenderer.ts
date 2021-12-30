@@ -12,7 +12,7 @@ export interface GpuRenderer {
   draw(controlstate: ControlState): void;
 }
 
-export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState) => {
+export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState, controlState: ControlState) => {
   const gl = canvasHelper.getWebGLContext();
 
   const frameBuffer = gl.createFramebuffer();
@@ -30,14 +30,14 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
 
   const postProcessingRenderer = getPostProcessingRenderer(canvasHelper, bufferhandler, mainRenderer.getTexture());
 
-  const draw = (controlstate: ControlState) => {
+  const draw = () => {
     time(() => occluderRenderer.renderOccluders(gamestate), "occluderRenderer");
 
     time(() => visibilityRenderer.renderVisibility(gamestate), "visibilityRenderer");
 
     time(() => mainRenderer.renderMain(gamestate), "mainRenderer");
 
-    time(() => postProcessingRenderer.renderPostProcess(gamestate, controlstate), "postProcessingRenderer");
+    time(() => postProcessingRenderer.renderPostProcess(gamestate, controlState), "postProcessingRenderer");
   }
 
   function time(f: () => void, ctx: string) {
@@ -48,8 +48,8 @@ export const getGpuRenderer = (canvasHelper: CanvasHelper, gamestate: GameState)
   }
 
   return {
-    draw: (controlstate: ControlState) => {
-      time(() => draw(controlstate), "drawScene");
+    draw: () => {
+      time(() => draw(), "drawScene");
     }
   }
 }

@@ -6,7 +6,6 @@ import { getGameState } from './game/gamestate';
 import { getCanvasHelper, CanvasHelper } from './rendering/canvashelper';
 
 import '../styles/Game.css'
-import { getGpuRenderer } from './rendering/gpu/gpurenderer';
 import { getRenderingHandler } from './rendering/renderinghandler';
 
 
@@ -146,6 +145,7 @@ class Game extends React.Component {
 
     const overlayCanvas = this.overlayCanvasRef.current!;
     const overlayCanvasHelper =  getCanvasHelper(overlayCanvas, gamestate.camera);
+    const gpuCanvasHelper = getCanvasHelper(this.gpuCanvasRef.current!, gamestate.camera);
     
     overlayCanvas.onmousedown = (e: { button: number; }) => this.OnMouseDownCB(e);
     overlayCanvas.onmouseup = (e: any) => this.OnMouseUpCB(e);
@@ -170,13 +170,7 @@ class Game extends React.Component {
     this.controlstate.mouse.posCanvas = [this.overlayCanvasRef.current!.width * 0.5, this.overlayCanvasRef.current!.height * 0.5]
     this.controlstate.mouse.pos = () => overlayCanvasHelper.canvas2world(this.controlstate.mouse.posCanvas)
 
-    const gpuRenderer = getGpuRenderer(getCanvasHelper(this.gpuCanvasRef.current!, gamestate.camera), gamestate);
-  
-    if (gpuRenderer === null) {
-      return;
-    }
-
-    const renderingHandler = getRenderingHandler(gpuRenderer, overlayCanvasHelper, gamestate, this.controlstate);
+    const renderingHandler = getRenderingHandler(gpuCanvasHelper, overlayCanvasHelper, gamestate, this.controlstate);
 
     startGame(renderingHandler, gamestate, this.controlstate, requestAnimFrame());
   }
